@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence, useVelocity, useSpring, useMotionValue } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { ArrowUpRight, X } from "lucide-react";
 import Lenis from "lenis";
@@ -48,21 +48,87 @@ const works = [
   }
 ];
 
-// --- Utilities ---
-const easeHighFashion = [0.22, 1, 0.36, 1]; // High-fashion snap and smooth
-const staggerText = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { ease: easeHighFashion, duration: 1.2 } }
+const easeHighFashion = [0.22, 1, 0.36, 1]; 
+
+// Liquid Ripple & Chromatic Aberration Transition (DOM based)
+const liquidDropIn = {
+  hidden: { opacity: 0, filter: "url(#liquidMask) blur(4px)", scale: 0.98, y: 30 },
+  visible: { 
+    opacity: 1, filter: "blur(0px)", scale: 1, y: 0, 
+    transition: { ease: easeHighFashion, duration: 1.5 } 
+  }
 };
 
-// --- Components ---
-const ParallaxHeader = ({ children, offset = 100 }) => {
+const staggerText = {
+  hidden: { opacity: 0, filter: "url(#liquidMask)", y: 20 },
+  visible: { opacity: 1, filter: "blur(0px)", y: 0, transition: { ease: easeHighFashion, duration: 1.2 } }
+};
+
+// --- PHYSICS ENGINES ---
+
+const VelocityStretch = ({ children }) => {
+  const { scrollY } = useScroll();
+  const scrollVelocity = useVelocity(scrollY);
+  const smoothVelocity = useSpring(scrollVelocity, { damping: 100, stiffness: 600 });
+  const velocityScaleY = useTransform(smoothVelocity, [-1500, 1500], [0.96, 1.04]);
+  const velocityScaleX = useTransform(smoothVelocity, [-1500, 1500], [1.02, 0.98]);
+
+  return <motion.div style={{ scaleY: velocityScaleY, scaleX: velocityScaleX }} className="w-full">{children}</motion.div>;
+};
+
+const MagneticFloat = ({ children, force = 10 }) => {
   const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [-offset, offset]);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  
+  const mouseXSpring = useSpring(x, { stiffness: 200, damping: 20, mass: 0.1 });
+  const mouseYSpring = useSpring(y, { stiffness: 200, damping: 20, mass: 0.1 });
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [force, -force]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-force, force]);
+
+  // Generate a random unique duration for the infinite sine wave
+  const randomDuration = useRef(4 + Math.random() * 2).current;
+
+  const handleMouseMove = (e) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    x.set(mouseX / rect.width - 0.5);
+    y.set(mouseY / rect.height - 0.5);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
 
   return (
-    <motion.div ref={ref} style={{ y }} className="relative z-0">
+    <motion.div
+      ref={ref} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
+      style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+      className="inline-block relative"
+    >
+      <motion.div 
+         animate={{ y: [0, -4, 0] }} 
+         transition={{ duration: randomDuration, repeat: Infinity, ease: "easeInOut" }}
+         className="w-full h-full"
+      >
+         {children}
+      </motion.div>
+    </motion.div>
+  );
+};
+
+const FocalCameraBlur = ({ children, offset = ["start end", "end start"], blurStrength = 5 }) => {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset });
+  // Blurs at 0 (entering) and 1 (leaving), perfectly sharp at 0.5 (center screen)
+  const blur = useTransform(scrollYProgress, [0, 0.5, 1], [blurStrength, 0, blurStrength]);
+  
+  return (
+    <motion.div ref={ref} style={{ filter: useTransform(blur, value => `blur(${value}px)`) }}>
       {children}
     </motion.div>
   );
@@ -72,297 +138,219 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("Home");
   const [selectedWork, setSelectedWork] = useState(null);
 
-  // Initialize smooth scrolling with Lerp (Lenis)
+  // Laminar Flow - Gentle continuous side drifts based on overall document scroll
+  const { scrollYProgress } = useScroll();
+  const driftLeft = useTransform(scrollYProgress, [0, 1], ["0vw", "-5vw"]);
+  const driftRight = useTransform(scrollYProgress, [0, 1], ["0vw", "5vw"]);
+
   useEffect(() => {
-    const lenis = new Lenis({
-      lerp: 0.05, 
-      smoothWheel: true,
-    });
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
+    const lenis = new Lenis({ lerp: 0.05, smoothWheel: true });
+    window.lenis = lenis;
+    function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
     requestAnimationFrame(raf);
-    return () => lenis.destroy();
+    return () => { lenis.destroy(); delete window.lenis; };
   }, []);
 
-  // Keep black canvas always; only move this accent element per tab
-  const accentMap = {
-    Home: {
-      x: "-28vw",
-      y: "-22vh",
-      scale: 1,
-      opacity: 0.5,
-      background:
-        "radial-gradient(circle at center, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 35%, rgba(0,0,0,0) 70%)"
-    },
-    Work: {
-      x: "24vw",
-      y: "-15vh",
-      scale: 1.15,
-      opacity: 0.4,
-      background:
-        "radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 38%, rgba(0,0,0,0) 70%)"
-    },
-    Archive: {
-      x: "18vw",
-      y: "22vh",
-      scale: 1.05,
-      opacity: 0.35,
-      background:
-        "radial-gradient(circle at center, rgba(220,38,38,0.18) 0%, rgba(220,38,38,0.05) 35%, rgba(0,0,0,0) 70%)"
-    },
-    About: {
-      x: "-20vw",
-      y: "18vh",
-      scale: 1.1,
-      opacity: 0.42,
-      background:
-      x: "-20vw", y: "18vh", scale: 1.1, opacity: 0.42,
-      background: "radial-gradient(circle at center, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 40%, rgba(0,0,0,0) 70%)"
+  const handleNavClick = (id) => {
+    setActiveTab(id);
+    if (window.lenis) {
+      window.lenis.scrollTo(`#${id.toLowerCase()}`, { offset: 0, duration: 1.5, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
     }
   };
 
+  const accentMap = {
+    Home: { x: "-20vw", y: "-10vh", scale: 1, opacity: 0.6, backgroundColor: "#e11d48", borderRadius: "40%" },
+    Work: { x: "20vw", y: "15vh", scale: 1.3, opacity: 0.4, backgroundColor: "#f8fafc", borderRadius: "60%" },
+    Archive: { x: "0vw", y: "5vh", scale: 1.6, opacity: 0.4, backgroundColor: "#6366f1", borderRadius: "30%" },
+    About: { x: "-15vw", y: "20vh", scale: 1.2, opacity: 0.5, backgroundColor: "#10b981", borderRadius: "50%" }
+  };
+
   return (
-    <div className="relative min-h-screen bg-[#050505] font-sans antialiased selection:bg-red-600 selection:text-white overflow-hidden">
-      {/* Background element morphing through tabs */}
+    <div className="relative bg-[#050505] font-sans antialiased text-[#f5f5f5] selection:bg-red-600 selection:text-white cursor-crosshair">
+      
+      {/* SVG DISPLACEMENT FILTER (Invisible Definition) */}
+      <svg className="hidden">
+        <filter id="liquidMask">
+           <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise" />
+           <feDisplacementMap in="SourceGraphic" in2="noise" scale="35" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
+
+      {/* Intense Glowing Blob transitioning through sections */}
       <motion.div
         aria-hidden
-        className="pointer-events-none fixed left-1/2 top-1/2 z-0 h-[85vmax] w-[85vmax] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl opacity-50"
+        className="pointer-events-none fixed left-1/2 top-1/2 z-0 h-[40vmax] w-[40vmax] -translate-x-1/2 -translate-y-1/2 blur-[100px] md:blur-[180px] mix-blend-screen"
         animate={accentMap[activeTab]}
-        transition={{ duration: 1.5, ease: easeHighFashion }}
+        transition={{ duration: 2.5, ease: easeHighFashion }}
       />
       
-      {/* Global Noise */}
-      <div className="pointer-events-none fixed inset-0 z-50 mix-blend-overlay opacity-[0.15] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <div className="pointer-events-none fixed inset-0 z-50 mix-blend-overlay opacity-[0.25] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       
-      {/* Persistent Nav (Pill) */}
-      <div className="fixed bottom-8 w-full flex justify-center z-50 pointer-events-none">
-        <motion.nav 
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5, duration: 1.2, ease: easeHighFashion }}
-          className="pointer-events-auto flex items-center gap-2 rounded-full bg-[#111]/90 border border-white/10 backdrop-blur-xl p-2 shadow-[0_20px_40px_rgba(0,0,0,0.7)] relative"
-        >
-          {["Home", "Work", "Archive", "About"].map((item) => (
-            <button 
-              key={item} 
-              onClick={() => {
-                window.scrollTo(0, 0);
-                setActiveTab(item);
-              }}
-              className={`relative px-5 py-2 rounded-full text-xs font-semibold tracking-widest uppercase transition-colors duration-500 z-10 ${activeTab === item ? 'text-black' : 'text-stone-400 hover:text-white'}`}
-            >
-              {activeTab === item && (
-                <motion.div 
-                   layoutId="active-pill"
-                   className="absolute inset-0 bg-white rounded-full -z-10"
-                   transition={{ duration: 0.8, ease: easeHighFashion }}
-                />
-              )}
-              {item}
-            </button>
-          ))}
-        </motion.nav>
+      {/* Persistent Nav (Pill) -> Magnetic Micro Float */}
+      <div className="fixed bottom-12 w-full flex justify-center z-50 pointer-events-auto perspective-[1000px]">
+        <MagneticFloat force={15}>
+           <motion.nav 
+             initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 1.2, ease: easeHighFashion }}
+             className="flex items-center gap-2 rounded-full bg-[#111]/80 border border-white/10 backdrop-blur-xl p-2 shadow-[0_20px_60px_rgba(0,0,0,0.9)] relative overflow-hidden"
+           >
+             {/* Dynamic chromatic refraction on the background of the nav */}
+             <div className="absolute inset-0 z-[-1] opacity-50 pointer-events-none bg-gradient-to-r from-red-500/20 via-blue-500/20 to-green-500/20 blur-md mix-blend-screen" />
+
+             {["Home", "Work", "Archive", "About"].map((item) => (
+               <button 
+                 key={item} onClick={() => handleNavClick(item)}
+                 className={`relative px-6 py-3 rounded-full text-xs font-semibold tracking-widest uppercase transition-colors duration-500 z-10 ${activeTab === item ? 'text-black' : 'text-stone-400 hover:text-white'}`}
+               >
+                 {activeTab === item && (
+                   <motion.div 
+                      layoutId="active-pill"
+                      className="absolute inset-0 bg-white rounded-full -z-10 shadow-[0_0_20px_rgba(255,255,255,0.5)]"
+                      transition={{ duration: 0.8, ease: easeHighFashion }}
+                   />
+                 )}
+                 {item}
+               </button>
+             ))}
+           </motion.nav>
+        </MagneticFloat>
       </div>
 
-      <AnimatePresence mode="wait">
-         {/* ----------- HOME PAGE ----------- */}
-         {activeTab === "Home" && (
-            <motion.div 
-              key="home-page"
-              initial={{ clipPath: "circle(0% at 50% 100%)", opacity: 0 }}
-              animate={{ clipPath: "circle(150% at 50% 100%)", opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.2, ease: easeHighFashion }}
-              className="relative w-full text-[#f5f5f5]"
-            >
-              {/* Deep Red Bottom Glow specific to Home */}
-              <div className="fixed bottom-0 left-0 right-0 h-[600px] pointer-events-none bg-red-aura z-0 opacity-60 mix-blend-screen" />
-
-              {/* Sticky Landing / Physical Slide Over Container */}
-              <div className="relative w-full">
-                {/* The Sticky Layer */}
-                <div className="h-screen w-full sticky top-0 flex flex-col items-center justify-center overflow-hidden -z-10 bg-[#050505]">
-                  <motion.div className="text-center px-4 relative z-10">
-                    <div className="overflow-hidden pb-4">
-                      <motion.h1 
-                        initial={{ y: "100%" }} animate={{ y: 0 }}
-                        transition={{ duration: 1.5, ease: easeHighFashion, delay: 0.2 }}
-                        className="font-display font-bold text-[13vw] leading-[0.8] tracking-tighter uppercase"
-                      >
-                        L/OCUS
-                      </motion.h1>
-                    </div>
-                    <div className="overflow-hidden pb-4">
-                      <motion.h1 
-                        initial={{ y: "100%" }} animate={{ y: 0 }}
-                        transition={{ duration: 1.5, ease: easeHighFashion, delay: 0.3 }}
-                        className="font-display font-bold text-[13vw] leading-[0.8] tracking-tighter uppercase text-stone-300"
-                      >
-                        PATH
-                      </motion.h1>
-                    </div>
-                    <motion.p 
-                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.8, duration: 1.2, ease: easeHighFashion }}
-                      className="mt-8 text-stone-400 max-w-lg mx-auto text-sm md:text-base font-medium tracking-wide uppercase"
-                    >
-                      Canvas-first interactive web design. Brutalist minimalist evolution.
-                    </motion.p>
-                  </motion.div>
-                </div>
-
-                {/* The Paper Sliding Over (Starts exactly at bottom of screen) */}
-                <main className="relative z-10 bg-[#f5f5f5] text-[#050505] rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] pb-32">
-                  <section className="section-shell pt-32 pb-20">
-                    <ParallaxHeader offset={150}>
-                      <h2 className="font-display text-5xl md:text-8xl font-bold uppercase leading-none tracking-tight opacity-10">Recent Work</h2>
-                      <h2 className="font-display text-5xl md:text-8xl font-bold uppercase leading-none tracking-tight absolute inset-0 bg-clip-text text-transparent bg-gradient-to-b from-[#050505] to-transparent">Recent Work</h2>
-                    </ParallaxHeader>
-                    
-                    <div className="mt-20 grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-                      {works.slice(0, 2).map((work, i) => (
-                        <motion.div 
-                          key={work.id}
-                          initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}
-                          variants={staggerText}
-                          transition={{ delay: i * 0.1 }}
-                          className="group relative cursor-pointer"
-                          onClick={() => setSelectedWork(work)}
+      <VelocityStretch>
+        <div className="relative w-full z-10 overflow-hidden">
+          
+          {/* ----------- HOME SECTION ----------- */}
+          <section id="home">
+              <motion.div onViewportEnter={() => setActiveTab("Home")} viewport={{ amount: 0.5, margin: "-100px" }}>
+                <div className="h-[120vh] w-full relative flex flex-col items-center justify-center -z-10">
+                  <FocalCameraBlur blurStrength={5}>
+                    <motion.div style={{ x: driftLeft }} className="text-center px-4 relative z-10">
+                      <div className="overflow-hidden pb-4">
+                        <motion.h1 
+                          initial="hidden" animate="visible" variants={liquidDropIn}
+                          className="font-display font-bold text-[13vw] leading-[0.8] tracking-tighter uppercase"
                         >
-                          <motion.div layoutId={`proj-container-${work.id}`} className="overflow-hidden rounded-xl bg-stone-200 aspect-[4/5] relative">
-                            <motion.img 
-                              layoutId={`proj-img-${work.id}`}
-                              whileHover={{ scale: 1.05 }}
-                              transition={{ duration: 0.8, ease: easeHighFashion }}
-                              src={work.img} alt={work.title} 
-                              className="w-full h-full object-cover"
-                            />
-                          </motion.div>
-                          <div className="mt-4 flex justify-between items-baseline">
-                            <h3 className="font-display text-2xl font-bold uppercase">{work.title}</h3>
-                            <span className="text-xs uppercase tracking-[0.2em] text-red-600 font-bold">{work.category}</span>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </section>
-                </main>
-              </div>
-            </motion.div>
-         )}
+                          L/OCUS
+                        </motion.h1>
+                      </div>
+                      <div className="overflow-hidden pb-4">
+                        <motion.h1 
+                          initial="hidden" animate="visible" variants={liquidDropIn} transition={{ delay: 0.1 }}
+                          className="font-display font-bold text-[13vw] leading-[0.8] tracking-tighter uppercase text-stone-300"
+                        >
+                          PATH
+                        </motion.h1>
+                      </div>
+                      <motion.p 
+                        initial="hidden" animate="visible" variants={liquidDropIn} transition={{ delay: 0.2 }}
+                        className="mt-8 text-stone-400 max-w-lg mx-auto text-sm md:text-base font-medium tracking-wide uppercase"
+                      >
+                        Canvas-first interactive web design. Fluid brutalist evolution.
+                      </motion.p>
+                    </motion.div>
+                  </FocalCameraBlur>
+                </div>
+              </motion.div>
+          </section>
 
-         {/* ----------- WORK PAGE ----------- */}
-         {activeTab === "Work" && (
-            <motion.div 
-              key="work-page"
-              initial={{ clipPath: "circle(0% at 50% 100%)", opacity: 0 }}
-              animate={{ clipPath: "circle(150% at 50% 100%)", opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.2, ease: easeHighFashion }}
-              className="relative w-full min-h-screen text-[#f5f5f5] pt-32 pb-48"
-            >
-               <div className="section-shell">
-                  <motion.h1 
-                     initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-                     transition={{ duration: 1.2, ease: easeHighFashion }}
-                     className="font-display text-6xl md:text-9xl font-bold uppercase tracking-tighter mb-20 text-stone-100"
-                  >
-                     All Works
-                  </motion.h1>
+          {/* ----------- WORK SECTION ----------- */}
+          <section id="work" className="bg-[#f5f5f5] text-[#050505] rounded-t-[4rem] shadow-[0_-30px_60px_rgba(0,0,0,0.9)] pt-32 pb-48 mt-[-20vh] z-20 relative px-4 md:px-10">
+            <motion.div onViewportEnter={() => setActiveTab("Work")} viewport={{ margin: "-30%", amount: 0.1 }}>
+               <div className="max-w-[1600px] mx-auto py-10 perspective-[1000px]">
+                  <FocalCameraBlur offset={["start end", "center center"]} blurStrength={2}>
+                    <motion.h1 
+                       initial="hidden" whileInView="visible" viewport={{ once: true }} variants={liquidDropIn}
+                       className="font-display text-4xl md:text-8xl font-bold uppercase tracking-tighter mb-20 text-stone-900 border-b border-black/10 pb-10"
+                    >
+                       Selected Works
+                    </motion.h1>
+                  </FocalCameraBlur>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <motion.div style={{ x: driftRight }} className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-14">
                     {works.map((work, i) => (
                       <motion.div 
                         key={work.id}
-                        initial="hidden" whileInView="visible" viewport={{ once: true }}
+                        initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}
                         variants={staggerText}
                         transition={{ delay: i * 0.1 }}
-                        className="group relative cursor-pointer"
-                        onClick={() => setSelectedWork(work)}
                       >
-                        <motion.div layoutId={`proj-container-${work.id}`} className="overflow-hidden rounded-xl bg-stone-200 aspect-square relative">
-                          <motion.img 
-                            layoutId={`proj-img-${work.id}`}
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.8, ease: easeHighFashion }}
-                            src={work.img} alt={work.title} 
-                            className="w-full h-full object-cover"
-                          />
-                        </motion.div>
-                        <div className="mt-4">
-                          <h3 className="font-display text-xl font-bold uppercase text-stone-100">{work.title}</h3>
-                          <span className="text-[10px] uppercase tracking-[0.2em] text-red-400 font-bold">{work.category}</span>
-                        </div>
+                         <MagneticFloat force={8}>
+                           <div className="group relative cursor-pointer w-full h-full" onClick={() => setSelectedWork(work)}>
+                              {/* Scale-and-Stretch happens automatically under VelocityStretch, but we give the image extra Z-depth */}
+                             <motion.div layoutId={`proj-container-${work.id}`} className="overflow-hidden rounded-2xl bg-stone-200 aspect-[4/5] relative shadow-lg group-hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] transition-shadow duration-500">
+                               <motion.img 
+                                 layoutId={`proj-img-${work.id}`}
+                                 whileHover={{ scale: 1.05, filter: "saturate(1.1)" }}
+                                 transition={{ duration: 1.5, ease: easeHighFashion }}
+                                 src={work.img} alt={work.title} 
+                                 className="w-full h-full object-cover"
+                               />
+                             </motion.div>
+                             <div className="mt-8 flex flex-col items-start gap-2">
+                               <h3 className="font-display text-2xl font-bold uppercase text-stone-900 group-hover:text-red-600 transition-colors">{work.title}</h3>
+                               <span className="text-[10px] uppercase tracking-[0.2em] text-red-600 border border-red-600/30 px-4 py-1 rounded-full font-bold">{work.category}</span>
+                             </div>
+                           </div>
+                         </MagneticFloat>
                       </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                </div>
             </motion.div>
-         )}
+          </section>
 
-         {/* ----------- ARCHIVE PAGE ----------- */}
-         {activeTab === "Archive" && (
-            <motion.div 
-              key="archive-page"
-              initial={{ clipPath: "circle(0% at 50% 100%)", opacity: 0 }}
-              animate={{ clipPath: "circle(150% at 50% 100%)", opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.2, ease: easeHighFashion }}
-              className="relative w-full min-h-screen text-[#f5f5f5] pt-32 pb-48"
-            >
-               <div className="section-shell">
-                  <motion.h1 
-                     initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-                     transition={{ duration: 1.2, ease: easeHighFashion }}
-                     className="font-display text-6xl md:text-9xl font-bold uppercase tracking-tighter mb-20 text-stone-300"
-                  >
-                     The Archive
-                  </motion.h1>
-                  <div className="space-y-4">
+          {/* ----------- ARCHIVE SECTION ----------- */}
+          <section id="archive" className="relative z-10 pt-48 pb-32 px-4 md:px-10">
+            <motion.div onViewportEnter={() => setActiveTab("Archive")} viewport={{ margin: "-30%", amount: 0.2 }}>
+               <div className="max-w-[1600px] mx-auto relative perspective-[1200px]">
+                  <FocalCameraBlur offset={["start end", "center center"]} blurStrength={2}>
+                    <motion.h1 
+                       initial="hidden" whileInView="visible" viewport={{ once: true }} variants={liquidDropIn}
+                       className="font-display text-4xl md:text-8xl font-bold uppercase tracking-tighter mb-20 text-stone-300"
+                    >
+                       Archive Log
+                    </motion.h1>
+                  </FocalCameraBlur>
+                  <motion.div style={{ x: driftLeft }} className="space-y-4">
                      {works.map((work, i) => (
-                        <motion.div 
-                           key={work.id}
-                           initial="hidden" whileInView="visible" viewport={{ once: true }}
-                           variants={staggerText}
-                           transition={{ delay: i * 0.1 }}
-                           className="flex w-full items-baseline justify-between border-b border-white/10 pb-4 hover:border-white transition-colors cursor-pointer"
-                           onClick={() => setSelectedWork(work)}
-                        >
-                           <h3 className="font-display text-3xl md:text-5xl uppercase font-bold text-stone-400 hover:text-white transition-colors">{work.title}</h3>
-                           <p className="font-mono text-sm uppercase text-stone-600">{work.category}</p>
-                        </motion.div>
+                        <MagneticFloat key={work.id} force={3}>
+                           <motion.div 
+                              initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}
+                              variants={staggerText} transition={{ delay: i * 0.1 }}
+                              className="flex w-full items-baseline justify-between border-b border-white/5 pb-8 pt-4 hover:border-white transition-colors cursor-pointer group"
+                              onClick={() => setSelectedWork(work)}
+                           >
+                              <h3 className="font-display text-3xl md:text-6xl uppercase font-bold text-stone-500 group-hover:text-white transition-colors">{work.title}</h3>
+                              <p className="font-mono text-xs md:text-sm uppercase text-red-500 tracking-widest">{work.category}</p>
+                           </motion.div>
+                        </MagneticFloat>
                      ))}
-                  </div>
+                  </motion.div>
                </div>
             </motion.div>
-         )}
+          </section>
 
-         {/* ----------- ABOUT PAGE ----------- */}
-         {activeTab === "About" && (
-            <motion.div 
-              key="about-page"
-              initial={{ clipPath: "circle(0% at 50% 100%)", opacity: 0 }}
-              animate={{ clipPath: "circle(150% at 50% 100%)", opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.2, ease: easeHighFashion }}
-              className="relative w-full min-h-screen text-[#f5f5f5] pt-32 pb-48"
-            >
-               <div className="section-shell max-w-5xl">
-                  <motion.h1 
-                     initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-                     transition={{ duration: 1.2, ease: easeHighFashion }}
-                     className="font-display text-5xl md:text-8xl font-bold uppercase tracking-tighter mb-32 leading-[0.9]"
-                  >
-                     LocusPath is a creative agency driven by pixel-perfect design.
-                  </motion.h1>
+          {/* ----------- ABOUT SECTION ----------- */}
+          <section id="about" className="relative z-10 pt-48 pb-64 px-4 md:px-10">
+            <motion.div onViewportEnter={() => setActiveTab("About")} viewport={{ margin: "-30%", amount: 0.2 }}>
+               <div className="max-w-[1600px] mx-auto perspective-[1200px]">
+                  <FocalCameraBlur offset={["start end", "center center" ]} blurStrength={3}>
+                    <motion.div style={{ x: driftRight }}>
+                      <motion.h1 
+                         initial="hidden" whileInView="visible" viewport={{ once: true }} variants={liquidDropIn}
+                         className="font-display text-5xl md:text-[7vw] max-w-[90vw] font-bold uppercase tracking-tight mb-32 leading-[0.9]"
+                      >
+                         LocusPath is an agency driven by zero-gravity physics.
+                      </motion.h1>
+                    </motion.div>
+                  </FocalCameraBlur>
 
                   <div className="grid md:grid-cols-2 gap-20">
-                    <ParallaxHeader offset={80}>
-                      <h2 className="font-display text-4xl font-bold uppercase tracking-tight text-white">Services</h2>
-                      <p className="mt-6 text-stone-400 font-medium">Services that transform. We partner with elite brands.</p>
-                    </ParallaxHeader>
+                    <MagneticFloat force={10}>
+                      <div>
+                        <h2 className="font-display text-4xl font-bold uppercase tracking-tight text-white mb-6">Services</h2>
+                        <p className="text-stone-400 font-medium max-w-sm leading-relaxed text-lg">We develop hyper-interactive brand systems and fluid digital experiences for elite technical companies.</p>
+                      </div>
+                    </MagneticFloat>
                     
                     <div className="space-y-12">
                       {services.map((srv, i) => (
@@ -376,10 +364,10 @@ export default function App() {
                             <span className="text-xs text-stone-500 font-mono">{(i + 1).toString().padStart(2, '0')}</span>
                             <ArrowUpRight className="w-5 h-5 text-stone-400 transition-transform group-hover:text-white group-hover:translate-x-1 group-hover:-translate-y-1" />
                           </div>
-                          <h3 className="font-display text-2xl uppercase font-bold text-stone-200">{srv.title}</h3>
+                          <h3 className="font-display text-2xl md:text-3xl uppercase font-bold text-stone-300">{srv.title}</h3>
                           <div className="mt-4 flex flex-wrap gap-2">
                             {srv.points.map(pt => (
-                              <span key={pt} className="text-[10px] uppercase tracking-widest text-stone-500 border border-white/10 rounded-full px-3 py-1">
+                              <span key={pt} className="text-[10px] uppercase tracking-widest text-stone-500 border border-white/10 rounded-full px-4 py-2 bg-white/5">
                                 {pt}
                               </span>
                             ))}
@@ -389,35 +377,41 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Protocol */}
                   <div className="mt-48">
-                     <h2 className="font-display text-5xl font-bold uppercase mb-16 text-center text-stone-500">Protocol</h2>
-                     <div className="grid md:grid-cols-4 gap-4">
+                     <h2 className="font-display text-5xl font-bold uppercase mb-16 text-stone-500 border-b border-white/10 pb-10">Protocol Overview</h2>
+                     <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8">
                         {processSteps.map((step, i) => (
-                           <motion.div 
-                              key={step.title}
-                              initial="hidden" whileInView="visible" viewport={{ once: true }}
-                              variants={staggerText} transition={{ delay: i * 0.1 }}
-                              className="p-8 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/[0.05] transition-colors relative"
-                           >
-                              <span className="font-display text-6xl font-bold italic opacity-10 absolute top-2 right-4">{i+1}</span>
-                              <h3 className="font-display text-lg uppercase font-bold text-white mb-4 relative z-10">{step.title}</h3>
-                              <p className="text-xs text-stone-400 relative z-10 leading-relaxed">{step.text}</p>
-                           </motion.div>
+                           <MagneticFloat key={step.title} force={15}>
+                             <motion.div 
+                                initial="hidden" whileInView="visible" viewport={{ once: true }}
+                                variants={liquidDropIn} transition={{ delay: i * 0.15 }}
+                                className="p-10 bg-white/[0.02] border border-white/5 rounded-3xl hover:bg-white/[0.05] transition-colors relative h-full flex flex-col justify-end backdrop-blur-xl"
+                             >
+                                <span className="font-display text-8xl font-bold italic opacity-[0.03] absolute top-4 right-6 text-white">{i+1}</span>
+                                <div className="pt-24 relative z-10">
+                                  <h3 className="font-display text-2xl uppercase font-bold text-white mb-4">{step.title}</h3>
+                                  <p className="text-sm text-stone-400 leading-relaxed max-w-[200px]">{step.text}</p>
+                                </div>
+                             </motion.div>
+                           </MagneticFloat>
                         ))}
                      </div>
                   </div>
 
                </div>
             </motion.div>
-         )}
-      </AnimatePresence>
+          </section>
+        </div>
+      </VelocityStretch>
 
       {/* ----------- SCALE TO FILL MODAL ----------- */}
       <AnimatePresence>
         {selectedWork && (
           <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0, filter: "url(#liquidMask) blur(10px)" }} 
+            animate={{ opacity: 1, filter: "blur(0px)" }} 
+            exit={{ opacity: 0, filter: "url(#liquidMask) blur(10px)" }}
+            transition={{ ease: easeHighFashion, duration: 1.2 }}
             className="fixed inset-0 z-[100] bg-[#050505] text-[#f5f5f5] overflow-y-auto hide-scrollbar"
             data-lenis-prevent="true"
           >
@@ -429,7 +423,7 @@ export default function App() {
               />
               <button 
                 onClick={() => setSelectedWork(null)}
-                className="fixed top-8 left-8 md:top-12 md:left-12 px-8 py-4 bg-[#0a0a0a] border border-white/20 backdrop-blur-xl rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all z-[110] text-white group shadow-2xl"
+                className="fixed top-8 left-8 md:top-12 md:left-12 px-8 py-4 bg-[#0a0a0a]/80 border border-white/20 backdrop-blur-xl rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all z-[110] text-white group shadow-2xl"
               >
                 <div className="flex items-center gap-3">
                    <div className="w-2 h-2 rounded-full bg-red-500 group-hover:bg-black transition-colors" />
@@ -438,38 +432,39 @@ export default function App() {
               </button>
             </motion.div>
 
-            <div className="section-shell py-20 relative -mt-32 z-10">
-              <div className="bg-[#111] p-10 md:p-20 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/5 relative">
-                <motion.div 
-                  initial="hidden" whileInView="visible" viewport={{ once: true }}
-                  variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-                  className="space-y-6"
-                >
-                  <motion.div variants={staggerText}>
-                    <p className="text-red-500 uppercase tracking-[0.3em] text-xs font-bold mb-4">{selectedWork.category}</p>
-                    <h2 className="font-display text-5xl md:text-8xl font-bold uppercase leading-none tracking-tight">{selectedWork.title}</h2>
-                  </motion.div>
-                  
-                  <motion.div variants={staggerText} className="grid md:grid-cols-2 gap-10 mt-10 pt-10 border-t border-white/10">
-                    <div><p className="text-stone-400 text-lg leading-relaxed">{selectedWork.text}</p></div>
-                    <div className="space-y-6">
-                      <div>
-                        <p className="text-stone-500 uppercase tracking-widest text-xs mb-1">Art Direction</p>
-                        <p className="font-display text-xl uppercase font-bold text-stone-200">{selectedWork.artDir}</p>
+            <div className="max-w-[1600px] mx-auto py-20 relative -mt-32 z-10 px-4 md:px-10 perspective-[1000px]">
+              <MagneticFloat force={5}>
+                <div className="bg-[#111] p-10 md:p-24 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/5 relative w-full">
+                  <motion.div 
+                    initial="hidden" whileInView="visible" viewport={{ once: true }}
+                    variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                    className="space-y-6"
+                  >
+                    <motion.div variants={staggerText}>
+                      <p className="text-red-500 uppercase tracking-[0.3em] text-xs font-bold mb-4">{selectedWork.category}</p>
+                      <h2 className="font-display text-5xl md:text-[8vw] font-bold uppercase leading-[0.9] tracking-tight">{selectedWork.title}</h2>
+                    </motion.div>
+                    
+                    <motion.div variants={staggerText} className="grid md:grid-cols-2 gap-10 mt-10 pt-10 border-t border-white/10">
+                      <div><p className="text-stone-400 text-xl leading-relaxed max-w-lg">{selectedWork.text}</p></div>
+                      <div className="space-y-6">
+                        <div>
+                          <p className="text-stone-500 uppercase tracking-widest text-xs mb-1">Art Direction</p>
+                          <p className="font-display text-2xl uppercase font-bold text-stone-200">{selectedWork.artDir}</p>
+                        </div>
+                        <div>
+                          <p className="text-stone-500 uppercase tracking-widest text-xs mb-1">Visual Design</p>
+                          <p className="font-display text-2xl uppercase font-bold text-stone-200">{selectedWork.visual}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-stone-500 uppercase tracking-widest text-xs mb-1">Visual Design</p>
-                        <p className="font-display text-xl uppercase font-bold text-stone-200">{selectedWork.visual}</p>
-                      </div>
-                    </div>
+                    </motion.div>
                   </motion.div>
-                </motion.div>
-              </div>
+                </div>
+              </MagneticFloat>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }
