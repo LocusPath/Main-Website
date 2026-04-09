@@ -1,6 +1,6 @@
 import { motion, useScroll, useTransform, AnimatePresence, useVelocity, useSpring, useMotionValue } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
-import { ArrowUpRight, ArrowDown } from "lucide-react";
+import { ArrowUpRight, ArrowDown, X, Send, CheckCircle } from "lucide-react";
 import Lenis from "lenis";
 
 // --- Data ---
@@ -121,6 +121,9 @@ const FocalCameraBlur = ({ children, offset = ["start end", "end start"], blurSt
 export default function App() {
   const [activeTab, setActiveTab] = useState("Home");
   const [selectedWork, setSelectedWork] = useState(null);
+  const [showContact, setShowContact] = useState(false);
+  const [formState, setFormState] = useState("idle"); // idle | sending | sent | error
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", budget: "", message: "" });
 
   const { scrollYProgress } = useScroll();
   const driftLeft = useTransform(scrollYProgress, [0, 1], ["0vw", "-3vw"]);
@@ -472,11 +475,11 @@ export default function App() {
                   </motion.h2>
                   <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerText}
                     className="mt-10 flex flex-col sm:flex-row gap-6 items-start">
-                    <a href="mailto:locuspath0904@gmail.com"
+                    <button onClick={() => setShowContact(true)}
                       className="bg-white text-black font-display font-bold uppercase tracking-widest text-xs px-10 py-5 rounded-full hover:bg-red-500 hover:text-white transition-all duration-500 group flex items-center gap-3">
                       Start a Project
                       <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    </a>
+                    </button>
                     <a href="mailto:locuspath0904@gmail.com"
                       className="font-display text-xl md:text-2xl font-bold text-stone-400 hover:text-white transition-colors uppercase tracking-tight">
                       locuspath0904@gmail.com
@@ -572,6 +575,147 @@ export default function App() {
                 </div>
               </MagneticFloat>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* ═══════════ CONTACT MODAL ═══════════ */}
+      <AnimatePresence>
+        {showContact && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: easePowerOut }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) { setShowContact(false); setFormState("idle"); } }}
+          >
+            {/* Backdrop */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, rotateX: 8, y: 60 }}
+              animate={{ scale: 1, opacity: 1, rotateX: 0, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, rotateX: -5, y: 40 }}
+              transition={{ duration: 0.8, ease: easePowerOut }}
+              className="relative z-10 w-full max-w-xl bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-8 md:p-12 shadow-[0_30px_80px_rgba(0,0,0,0.9)] overflow-hidden"
+              style={{ perspective: "1000px" }}
+              data-lenis-prevent="true"
+            >
+              {/* Decorative glow */}
+              <div className="absolute -top-20 -right-20 w-40 h-40 bg-red-500/20 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-indigo-500/10 rounded-full blur-[80px] pointer-events-none" />
+
+              {/* Close button */}
+              <button onClick={() => { setShowContact(false); setFormState("idle"); }}
+                className="absolute top-6 right-6 w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-stone-500 hover:text-white hover:bg-white/10 transition-all">
+                <X className="w-4 h-4" />
+              </button>
+
+              {formState === "sent" ? (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                  className="text-center py-12 space-y-6">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 200, damping: 12 }}>
+                    <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto" />
+                  </motion.div>
+                  <h3 className="font-display text-3xl font-bold uppercase tracking-tight text-white">Message Sent</h3>
+                  <p className="text-stone-400 text-sm max-w-sm mx-auto">Thanks for reaching out! We'll review your project details and get back to you within 24 hours.</p>
+                  <button onClick={() => { setShowContact(false); setFormState("idle"); setFormData({ name: "", email: "", phone: "", budget: "", message: "" }); }}
+                    className="mt-4 px-8 py-3 bg-white/5 border border-white/10 rounded-full text-xs uppercase tracking-widest font-bold text-stone-300 hover:bg-white hover:text-black transition-all">
+                    Close
+                  </button>
+                </motion.div>
+              ) : (
+                <>
+                  <div className="mb-8">
+                    <span className="text-[10px] uppercase tracking-[0.4em] text-stone-600 font-semibold">New Project Inquiry</span>
+                    <h3 className="font-display text-3xl md:text-4xl font-bold uppercase tracking-tight text-white mt-2">Let's Talk</h3>
+                  </div>
+
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    setFormState("sending");
+                    try {
+                      const res = await fetch("https://formsubmit.co/ajax/locuspath0904@gmail.com", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Accept: "application/json" },
+                        body: JSON.stringify({
+                          _subject: `New Inquiry from ${formData.name}`,
+                          Name: formData.name,
+                          Email: formData.email,
+                          Phone: formData.phone,
+                          Budget: formData.budget,
+                          Message: formData.message,
+                        }),
+                      });
+                      if (res.ok) setFormState("sent");
+                      else setFormState("error");
+                    } catch { setFormState("error"); }
+                  }} className="space-y-5">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[9px] uppercase tracking-[0.3em] text-stone-600 font-bold mb-2 block">Name *</label>
+                        <input required type="text" value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] transition-all"
+                          placeholder="Your name" />
+                      </div>
+                      <div>
+                        <label className="text-[9px] uppercase tracking-[0.3em] text-stone-600 font-bold mb-2 block">Email *</label>
+                        <input required type="email" value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] transition-all"
+                          placeholder="you@company.com" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[9px] uppercase tracking-[0.3em] text-stone-600 font-bold mb-2 block">Phone</label>
+                        <input type="tel" value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] transition-all"
+                          placeholder="+91 98765 43210" />
+                      </div>
+                      <div>
+                        <label className="text-[9px] uppercase tracking-[0.3em] text-stone-600 font-bold mb-2 block">Budget Range</label>
+                        <select value={formData.budget}
+                          onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.08] transition-all appearance-none cursor-pointer">
+                          <option value="" className="bg-[#111]">Select</option>
+                          <option value="Under ₹50K" className="bg-[#111]">Under ₹50K</option>
+                          <option value="₹50K – ₹1L" className="bg-[#111]">₹50K – ₹1L</option>
+                          <option value="₹1L – ₹3L" className="bg-[#111]">₹1L – ₹3L</option>
+                          <option value="₹3L+" className="bg-[#111]">₹3L+</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[9px] uppercase tracking-[0.3em] text-stone-600 font-bold mb-2 block">Project Brief *</label>
+                      <textarea required value={formData.message}
+                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        rows={4}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] transition-all resize-none"
+                        placeholder="Tell us about your project, goals, and timeline..." />
+                    </div>
+
+                    {formState === "error" && (
+                      <p className="text-red-400 text-xs">Something went wrong. Please try again or email us directly.</p>
+                    )}
+
+                    <button type="submit" disabled={formState === "sending"}
+                      className="w-full bg-white text-black font-display font-bold uppercase tracking-widest text-xs px-8 py-5 rounded-full hover:bg-red-500 hover:text-white transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group">
+                      {formState === "sending" ? (
+                        <><span className="animate-spin w-4 h-4 border-2 border-black/30 border-t-black rounded-full" /> Sending...</>
+                      ) : (
+                        <><Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" /> Submit Inquiry</>
+                      )}
+                    </button>
+                  </form>
+                </>
+              )}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
