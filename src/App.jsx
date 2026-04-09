@@ -48,7 +48,8 @@ const works = [
   }
 ];
 
-const easeHighFashion = [0.22, 1, 0.36, 1]; 
+const easeHighFashion = [0.22, 1, 0.36, 1];
+const easePowerOut = [0.16, 1, 0.3, 1]; // fast start, buttery settle
 
 const section3DReveal = {
   hidden: { opacity: 0, y: 80, rotateX: 8, scale: 0.96 },
@@ -125,8 +126,33 @@ export default function App() {
   const driftLeft = useTransform(scrollYProgress, [0, 1], ["0vw", "-3vw"]);
   const driftRight = useTransform(scrollYProgress, [0, 1], ["0vw", "3vw"]);
 
+  // ── Vertical Eclipse: scroll-driven Home→Work transition ──
+  const eclipseRef = useRef(null);
+  const { scrollYProgress: eclipseProgress } = useScroll({
+    target: eclipseRef,
+    offset: ["start start", "end start"]
+  });
+
+  // Background (Home) transforms — eclipsed
+  const bgScale = useTransform(eclipseProgress, [0, 0.5, 1], [1, 0.97, 0.92]);
+  const bgOpacity = useTransform(eclipseProgress, [0, 0.4, 0.8, 1], [1, 0.85, 0.4, 0.15]);
+  const bgBlurVal = useTransform(eclipseProgress, [0, 0.5, 1], [0, 2, 8]);
+  const bgFilter = useTransform(bgBlurVal, v => v <= 0.1 ? "none" : `blur(${v}px)`);
+  const bgParallaxY = useTransform(eclipseProgress, [0, 1], ["0%", "-15%"]);
+  const scrollIndicatorOpacity = useTransform(eclipseProgress, [0, 0.1], [1, 0]);
+
+  // Cover (Work) transforms — the singularity morph
+  const coverBorderRadius = useTransform(eclipseProgress, [0.2, 0.6, 0.9, 1], [60, 36, 12, 0]);
+  const coverBorderRadiusStr = useTransform(coverBorderRadius, v => `${v}px ${v}px 0 0`);
+  const coverScale = useTransform(eclipseProgress, [0.2, 0.7, 1], [0.92, 0.97, 1]);
+  const coverShadowIntensity = useTransform(eclipseProgress, [0.2, 0.7, 1], [0, 0.5, 1]);
+  const coverShadow = useTransform(coverShadowIntensity, v => 
+    `0 -${Math.round(15 + v * 45)}px ${Math.round(30 + v * 90)}px rgba(0,0,0,${(0.15 + v * 0.55).toFixed(2)})`
+  );
+  const coverMarginX = useTransform(eclipseProgress, [0.2, 0.9, 1], [20, 4, 0]);
+
   useEffect(() => {
-    const lenis = new Lenis({ lerp: 0.05, smoothWheel: true });
+    const lenis = new Lenis({ lerp: 0.07, smoothWheel: true, wheelMultiplier: 0.8 });
     window.lenis = lenis;
     function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
     requestAnimationFrame(raf);
@@ -160,9 +186,9 @@ export default function App() {
       {/* Ambient Blob — Primary */}
       <motion.div aria-hidden
         className="pointer-events-none fixed left-1/2 top-1/2 z-0 h-[35vmax] w-[35vmax] -translate-x-1/2 -translate-y-1/2 blur-[120px] md:blur-[200px] mix-blend-screen"
-        animate={accentMap[activeTab]} transition={{ duration: 3, ease: easeHighFashion }}
+        animate={accentMap[activeTab]} transition={{ duration: 3, ease: easePowerOut }}
       />
-      {/* Ambient Blob — Secondary (subtle counter-movement) */}
+      {/* Ambient Blob — Secondary */}
       <motion.div aria-hidden
         className="pointer-events-none fixed left-1/2 top-1/2 z-0 h-[20vmax] w-[20vmax] -translate-x-1/2 -translate-y-1/2 blur-[80px] md:blur-[140px] mix-blend-screen"
         animate={{
@@ -172,7 +198,7 @@ export default function App() {
           backgroundColor: activeTab === "Home" ? "#7c2d12" : activeTab === "Services" ? "#1e1b4b" : "#1c1917",
           scale: 0.8
         }}
-        transition={{ duration: 4, ease: easeHighFashion }}
+        transition={{ duration: 4, ease: easePowerOut }}
       />
       
       <div className="pointer-events-none fixed inset-0 z-50 mix-blend-overlay opacity-[0.2] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
@@ -180,7 +206,7 @@ export default function App() {
       {/* Persistent Nav */}
       <div className="fixed bottom-10 w-full flex justify-center z-50 pointer-events-auto" style={{ perspective: "1000px" }}>
         <MagneticFloat force={12}>
-           <motion.nav initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 1.2, ease: easeHighFashion }}
+           <motion.nav initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 1.2, ease: easePowerOut }}
              className="flex items-center gap-1 rounded-full bg-[#111]/80 border border-white/10 backdrop-blur-xl p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.9)] relative overflow-hidden">
              <div className="absolute inset-0 z-[-1] opacity-30 pointer-events-none bg-gradient-to-r from-red-500/20 via-blue-500/20 to-green-500/20 blur-md mix-blend-screen" />
              {["Home", "Work", "Services", "About"].map((item) => (
@@ -188,7 +214,7 @@ export default function App() {
                  className={`relative px-5 py-2.5 rounded-full text-[10px] font-semibold tracking-widest uppercase transition-colors duration-500 z-10 ${activeTab === item ? 'text-black' : 'text-stone-400 hover:text-white'}`}>
                  {activeTab === item && (
                    <motion.div layoutId="active-pill" className="absolute inset-0 bg-white rounded-full -z-10 shadow-[0_0_15px_rgba(255,255,255,0.4)]"
-                      transition={{ duration: 0.8, ease: easeHighFashion }} />
+                      transition={{ duration: 0.8, ease: easePowerOut }} />
                  )}
                  {item}
                </button>
@@ -198,58 +224,71 @@ export default function App() {
       </div>
 
       <VelocityStretch>
-        <div className="relative w-full z-10 overflow-hidden" style={{ perspective: "1200px" }}>
+        <div className="relative w-full z-10" style={{ perspective: "1200px" }}>
           
-          {/* ═══════════ HOME SECTION (STICKY — gets covered by Work) ═══════════ */}
-          <div id="home" className="relative h-[200vh]">
+          {/* ═══════════ HOME → WORK ECLIPSE CONTAINER ═══════════ */}
+          <div ref={eclipseRef} id="home" className="relative" style={{ height: "150vh" }}>
+
+            {/* ── BACKGROUND LAYER: Home (gets eclipsed) ── */}
             <motion.div onViewportEnter={() => setActiveTab("Home")} viewport={{ amount: 0.3 }}>
-              <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center z-0">
-                <FocalCameraBlur blurStrength={3}>
-                  <motion.div style={{ x: driftLeft }} className="text-center px-4 relative z-10">
-                    {/* Eyebrow */}
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 1.5 }}
-                      className="flex items-center justify-center gap-4 mb-10">
-                      <div className="h-px w-12 bg-stone-600" />
-                      <span className="text-[10px] tracking-[0.4em] uppercase text-stone-500 font-semibold">Creative Studio</span>
-                      <div className="h-px w-12 bg-stone-600" />
-                    </motion.div>
-
-                    <div className="overflow-hidden pb-2" style={{ perspective: "800px" }}>
-                      <motion.h1 initial={{ y: "110%", rotateX: -40, opacity: 0 }} animate={{ y: 0, rotateX: 0, opacity: 1 }}
-                        transition={{ duration: 1.8, ease: easeHighFashion, delay: 0.2 }} style={{ transformOrigin: "center bottom" }}
-                        className="font-display font-bold text-[15vw] leading-[0.85] tracking-tighter uppercase">
-                        L/OCUS
-                      </motion.h1>
-                    </div>
-                    <div className="overflow-hidden pb-2" style={{ perspective: "800px" }}>
-                      <motion.h1 initial={{ y: "110%", rotateX: -40, opacity: 0 }} animate={{ y: 0, rotateX: 0, opacity: 1 }}
-                        transition={{ duration: 1.8, ease: easeHighFashion, delay: 0.35 }} style={{ transformOrigin: "center bottom" }}
-                        className="font-display font-bold text-[15vw] leading-[0.85] tracking-tighter uppercase text-stone-400">
-                        PATH
-                      </motion.h1>
-                    </div>
-                    <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6, duration: 1.2, ease: easeHighFashion }}
-                      className="mt-8 text-stone-500 max-w-md mx-auto text-xs md:text-sm font-medium tracking-wider uppercase leading-relaxed">
-                      We architect immersive digital experiences<br />for brands that refuse to blend in.
-                    </motion.p>
+              <motion.div 
+                className="sticky top-0 h-screen w-full flex flex-col items-center justify-center z-0 will-change-transform"
+                style={{ scale: bgScale, opacity: bgOpacity, filter: bgFilter }}
+              >
+                <motion.div style={{ y: bgParallaxY }} className="text-center px-4 relative z-10">
+                  {/* Eyebrow */}
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 1.5 }}
+                    className="flex items-center justify-center gap-4 mb-10">
+                    <div className="h-px w-12 bg-stone-600" />
+                    <span className="text-[10px] tracking-[0.4em] uppercase text-stone-500 font-semibold">Creative Studio</span>
+                    <div className="h-px w-12 bg-stone-600" />
                   </motion.div>
-                </FocalCameraBlur>
 
-                {/* Scroll indicator */}
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5, duration: 1 }}
+                  <div className="overflow-hidden pb-2" style={{ perspective: "800px" }}>
+                    <motion.h1 initial={{ y: "110%", rotateX: -40, opacity: 0 }} animate={{ y: 0, rotateX: 0, opacity: 1 }}
+                      transition={{ duration: 1.8, ease: easePowerOut, delay: 0.2 }} style={{ transformOrigin: "center bottom" }}
+                      className="font-display font-bold text-[15vw] leading-[0.85] tracking-tighter uppercase">
+                      L/OCUS
+                    </motion.h1>
+                  </div>
+                  <div className="overflow-hidden pb-2" style={{ perspective: "800px" }}>
+                    <motion.h1 initial={{ y: "110%", rotateX: -40, opacity: 0 }} animate={{ y: 0, rotateX: 0, opacity: 1 }}
+                      transition={{ duration: 1.8, ease: easePowerOut, delay: 0.35 }} style={{ transformOrigin: "center bottom" }}
+                      className="font-display font-bold text-[15vw] leading-[0.85] tracking-tighter uppercase text-stone-400">
+                      PATH
+                    </motion.h1>
+                  </div>
+                  <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6, duration: 1.2, ease: easePowerOut }}
+                    className="mt-8 text-stone-500 max-w-md mx-auto text-xs md:text-sm font-medium tracking-wider uppercase leading-relaxed">
+                    We architect immersive digital experiences<br />for brands that refuse to blend in.
+                  </motion.p>
+                </motion.div>
+
+                {/* Scroll indicator — fades out as eclipse begins */}
+                <motion.div style={{ opacity: scrollIndicatorOpacity }}
                   className="absolute bottom-20 flex flex-col items-center gap-3">
                   <span className="text-[9px] uppercase tracking-[0.4em] text-stone-600">Scroll</span>
                   <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
                     <ArrowDown className="w-4 h-4 text-stone-600" />
                   </motion.div>
                 </motion.div>
-              </div>
+              </motion.div>
             </motion.div>
           </div>
 
-          {/* ═══════════ WORK SECTION (slides over Home) ═══════════ */}
-          <section id="work" className="bg-[#f5f5f5] text-[#050505] rounded-t-[4rem] shadow-[0_-40px_80px_rgba(0,0,0,0.7)] pt-28 pb-40 z-30 relative px-4 md:px-10">
+          {/* ── COVER LAYER: Work (the singularity that eclipses Home) ── */}
+          <motion.section id="work"
+            className="bg-[#f5f5f5] text-[#050505] pt-28 pb-40 z-30 relative px-4 md:px-10 will-change-transform"
+            style={{
+              borderRadius: coverBorderRadiusStr,
+              scale: coverScale,
+              boxShadow: coverShadow,
+              marginLeft: coverMarginX,
+              marginRight: coverMarginX,
+              marginTop: "-50vh",
+            }}
+          >
             <motion.div onViewportEnter={() => setActiveTab("Work")} viewport={{ amount: 0.15 }}>
                <div className="max-w-[1400px] mx-auto py-10" style={{ perspective: "1200px" }}>
                   <FocalCameraBlur offset={["start end", "center center"]} blurStrength={2}>
@@ -292,7 +331,7 @@ export default function App() {
                   </motion.div>
                </div>
             </motion.div>
-          </section>
+          </motion.section>
 
           {/* ═══════════ WHAT WE DO / CAPABILITIES ═══════════ */}
           <section id="services" className="relative z-10 pt-40 pb-32 px-4 md:px-10">
@@ -433,14 +472,14 @@ export default function App() {
                   </motion.h2>
                   <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerText}
                     className="mt-10 flex flex-col sm:flex-row gap-6 items-start">
-                    <a href="mailto:hello@locuspath.co"
+                    <a href="mailto:locuspath0904@gmail.com"
                       className="bg-white text-black font-display font-bold uppercase tracking-widest text-xs px-10 py-5 rounded-full hover:bg-red-500 hover:text-white transition-all duration-500 group flex items-center gap-3">
                       Start a Project
                       <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                     </a>
-                    <a href="mailto:hello@locuspath.co"
+                    <a href="mailto:locuspath0904@gmail.com"
                       className="font-display text-xl md:text-2xl font-bold text-stone-400 hover:text-white transition-colors uppercase tracking-tight">
-                      hello@locuspath.co
+                      locuspath0904@gmail.com
                     </a>
                   </motion.div>
                 </div>
@@ -468,7 +507,13 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-start md:items-end justify-end">
+                  <div className="flex flex-col items-start md:items-end justify-between gap-6">
+                    <div className="md:text-right">
+                      <h4 className="text-[10px] uppercase tracking-[0.3em] text-stone-600 font-bold mb-3">Contact</h4>
+                      <a href="tel:+919318368267" className="block text-sm text-stone-500 hover:text-white transition-colors font-medium">+91 9318368267</a>
+                      <a href="tel:+918287768083" className="block text-sm text-stone-500 hover:text-white transition-colors font-medium mt-1">+91 8287768083</a>
+                      <a href="mailto:locuspath0904@gmail.com" className="block text-sm text-stone-500 hover:text-white transition-colors font-medium mt-2">locuspath0904@gmail.com</a>
+                    </div>
                     <p className="text-[9px] uppercase tracking-[0.3em] text-stone-700">© {new Date().getFullYear()} LocusPath. All rights reserved.</p>
                   </div>
                 </div>
