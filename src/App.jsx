@@ -200,57 +200,57 @@ export default function App() {
       <VelocityStretch>
         <div className="relative w-full z-10 overflow-hidden" style={{ perspective: "1200px" }}>
           
-          {/* ═══════════ HOME SECTION ═══════════ */}
-          <section id="home">
-              <motion.div onViewportEnter={() => setActiveTab("Home")} viewport={{ amount: 0.5, margin: "-100px" }}>
-                <div className="h-screen w-full relative flex flex-col items-center justify-center">
-                  <FocalCameraBlur blurStrength={3}>
-                    <motion.div style={{ x: driftLeft }} className="text-center px-4 relative z-10">
-                      {/* Eyebrow */}
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 1.5 }}
-                        className="flex items-center justify-center gap-4 mb-10">
-                        <div className="h-px w-12 bg-stone-600" />
-                        <span className="text-[10px] tracking-[0.4em] uppercase text-stone-500 font-semibold">Creative Studio</span>
-                        <div className="h-px w-12 bg-stone-600" />
-                      </motion.div>
-
-                      <div className="overflow-hidden pb-2" style={{ perspective: "800px" }}>
-                        <motion.h1 initial={{ y: "110%", rotateX: -40, opacity: 0 }} animate={{ y: 0, rotateX: 0, opacity: 1 }}
-                          transition={{ duration: 1.8, ease: easeHighFashion, delay: 0.2 }} style={{ transformOrigin: "center bottom" }}
-                          className="font-display font-bold text-[15vw] leading-[0.85] tracking-tighter uppercase">
-                          L/OCUS
-                        </motion.h1>
-                      </div>
-                      <div className="overflow-hidden pb-2" style={{ perspective: "800px" }}>
-                        <motion.h1 initial={{ y: "110%", rotateX: -40, opacity: 0 }} animate={{ y: 0, rotateX: 0, opacity: 1 }}
-                          transition={{ duration: 1.8, ease: easeHighFashion, delay: 0.35 }} style={{ transformOrigin: "center bottom" }}
-                          className="font-display font-bold text-[15vw] leading-[0.85] tracking-tighter uppercase text-stone-400">
-                          PATH
-                        </motion.h1>
-                      </div>
-                      <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6, duration: 1.2, ease: easeHighFashion }}
-                        className="mt-8 text-stone-500 max-w-md mx-auto text-xs md:text-sm font-medium tracking-wider uppercase leading-relaxed">
-                        We architect immersive digital experiences<br />for brands that refuse to blend in.
-                      </motion.p>
+          {/* ═══════════ HOME SECTION (STICKY — gets covered by Work) ═══════════ */}
+          <div id="home" className="relative h-[200vh]">
+            <motion.div onViewportEnter={() => setActiveTab("Home")} viewport={{ amount: 0.3 }}>
+              <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center z-0">
+                <FocalCameraBlur blurStrength={3}>
+                  <motion.div style={{ x: driftLeft }} className="text-center px-4 relative z-10">
+                    {/* Eyebrow */}
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 1.5 }}
+                      className="flex items-center justify-center gap-4 mb-10">
+                      <div className="h-px w-12 bg-stone-600" />
+                      <span className="text-[10px] tracking-[0.4em] uppercase text-stone-500 font-semibold">Creative Studio</span>
+                      <div className="h-px w-12 bg-stone-600" />
                     </motion.div>
-                  </FocalCameraBlur>
 
-                  {/* Scroll indicator */}
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5, duration: 1 }}
-                    className="absolute bottom-20 flex flex-col items-center gap-3">
-                    <span className="text-[9px] uppercase tracking-[0.4em] text-stone-600">Scroll</span>
-                    <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
-                      <ArrowDown className="w-4 h-4 text-stone-600" />
-                    </motion.div>
+                    <div className="overflow-hidden pb-2" style={{ perspective: "800px" }}>
+                      <motion.h1 initial={{ y: "110%", rotateX: -40, opacity: 0 }} animate={{ y: 0, rotateX: 0, opacity: 1 }}
+                        transition={{ duration: 1.8, ease: easeHighFashion, delay: 0.2 }} style={{ transformOrigin: "center bottom" }}
+                        className="font-display font-bold text-[15vw] leading-[0.85] tracking-tighter uppercase">
+                        L/OCUS
+                      </motion.h1>
+                    </div>
+                    <div className="overflow-hidden pb-2" style={{ perspective: "800px" }}>
+                      <motion.h1 initial={{ y: "110%", rotateX: -40, opacity: 0 }} animate={{ y: 0, rotateX: 0, opacity: 1 }}
+                        transition={{ duration: 1.8, ease: easeHighFashion, delay: 0.35 }} style={{ transformOrigin: "center bottom" }}
+                        className="font-display font-bold text-[15vw] leading-[0.85] tracking-tighter uppercase text-stone-400">
+                        PATH
+                      </motion.h1>
+                    </div>
+                    <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6, duration: 1.2, ease: easeHighFashion }}
+                      className="mt-8 text-stone-500 max-w-md mx-auto text-xs md:text-sm font-medium tracking-wider uppercase leading-relaxed">
+                      We architect immersive digital experiences<br />for brands that refuse to blend in.
+                    </motion.p>
                   </motion.div>
-                </div>
-              </motion.div>
-          </section>
+                </FocalCameraBlur>
 
-          {/* ═══════════ WORK SECTION ═══════════ */}
-          <section id="work" className="bg-[#f5f5f5] text-[#050505] rounded-t-[4rem] shadow-[0_-30px_60px_rgba(0,0,0,0.9)] pt-28 pb-40 z-20 relative px-4 md:px-10">
-            <motion.div onViewportEnter={() => setActiveTab("Work")} viewport={{ margin: "-30%", amount: 0.1 }}>
+                {/* Scroll indicator */}
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5, duration: 1 }}
+                  className="absolute bottom-20 flex flex-col items-center gap-3">
+                  <span className="text-[9px] uppercase tracking-[0.4em] text-stone-600">Scroll</span>
+                  <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
+                    <ArrowDown className="w-4 h-4 text-stone-600" />
+                  </motion.div>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* ═══════════ WORK SECTION (slides over Home) ═══════════ */}
+          <section id="work" className="bg-[#f5f5f5] text-[#050505] rounded-t-[4rem] shadow-[0_-40px_80px_rgba(0,0,0,0.7)] pt-28 pb-40 z-30 relative px-4 md:px-10">
+            <motion.div onViewportEnter={() => setActiveTab("Work")} viewport={{ amount: 0.15 }}>
                <div className="max-w-[1400px] mx-auto py-10" style={{ perspective: "1200px" }}>
                   <FocalCameraBlur offset={["start end", "center center"]} blurStrength={2}>
                     <motion.h1 initial="hidden" whileInView="visible" viewport={{ once: true }} variants={liquidDropIn}
@@ -296,7 +296,7 @@ export default function App() {
 
           {/* ═══════════ WHAT WE DO / CAPABILITIES ═══════════ */}
           <section id="services" className="relative z-10 pt-40 pb-32 px-4 md:px-10">
-            <motion.div onViewportEnter={() => setActiveTab("Services")} viewport={{ margin: "-30%", amount: 0.2 }}>
+            <motion.div onViewportEnter={() => setActiveTab("Services")} viewport={{ amount: 0.2 }}>
               <div className="max-w-[1400px] mx-auto" style={{ perspective: "1200px" }}>
                 <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-20">
                   <div>
@@ -351,7 +351,7 @@ export default function App() {
 
           {/* ═══════════ ABOUT SECTION ═══════════ */}
           <section id="about" className="relative z-10 pt-32 pb-20 px-4 md:px-10">
-            <motion.div onViewportEnter={() => setActiveTab("About")} viewport={{ margin: "-20%", amount: 0.15 }}>
+            <motion.div onViewportEnter={() => setActiveTab("About")} viewport={{ amount: 0.15 }}>
                <div className="max-w-[1400px] mx-auto" style={{ perspective: "1200px" }}>
                   <FocalCameraBlur offset={["start end", "center center"]} blurStrength={2}>
                     <motion.div style={{ x: driftRight }}>
@@ -420,40 +420,56 @@ export default function App() {
           </section>
 
           {/* ═══════════ FOOTER ═══════════ */}
-          <footer className="relative z-10 border-t border-white/5 pt-20 pb-32 px-4 md:px-10">
+          <footer className="relative z-10 border-t border-white/5 pt-32 pb-32 px-4 md:px-10 overflow-hidden">
             <div className="max-w-[1400px] mx-auto">
               <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={section3DReveal}>
-                <div className="grid md:grid-cols-3 gap-16">
-                  {/* Left: Brand */}
+                
+                {/* Big CTA */}
+                <div className="mb-24">
+                  <motion.h2 initial="hidden" whileInView="visible" viewport={{ once: true }} variants={liquidDropIn}
+                    style={{ transformOrigin: "center bottom" }}
+                    className="font-display text-5xl md:text-[8vw] font-bold uppercase tracking-tighter leading-[0.85] text-white">
+                    Let's Build<br/><span className="text-stone-600">Something Together</span>
+                  </motion.h2>
+                  <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerText}
+                    className="mt-10 flex flex-col sm:flex-row gap-6 items-start">
+                    <a href="mailto:hello@locuspath.co"
+                      className="bg-white text-black font-display font-bold uppercase tracking-widest text-xs px-10 py-5 rounded-full hover:bg-red-500 hover:text-white transition-all duration-500 group flex items-center gap-3">
+                      Start a Project
+                      <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    </a>
+                    <a href="mailto:hello@locuspath.co"
+                      className="font-display text-xl md:text-2xl font-bold text-stone-400 hover:text-white transition-colors uppercase tracking-tight">
+                      hello@locuspath.co
+                    </a>
+                  </motion.div>
+                </div>
+
+                {/* Footer Grid */}
+                <div className="grid md:grid-cols-3 gap-16 pt-16 border-t border-white/5">
                   <div>
-                    <h2 className="font-display text-4xl font-bold uppercase tracking-tighter text-white">L/OCUS<br/>PATH</h2>
-                    <p className="mt-4 text-stone-500 text-sm leading-relaxed max-w-xs">Canvas-first interactive design studio. Brutalist minimalist evolution.</p>
+                    <h2 className="font-display text-3xl font-bold uppercase tracking-tighter text-white">L/OCUS<br/>PATH</h2>
+                    <p className="mt-4 text-stone-600 text-sm leading-relaxed max-w-xs">Canvas-first interactive design studio. Brutalist minimalist evolution.</p>
                   </div>
 
-                  {/* Center: Links */}
                   <div className="grid grid-cols-2 gap-8">
                     <div>
                       <h4 className="text-[10px] uppercase tracking-[0.3em] text-stone-600 font-bold mb-4">Navigation</h4>
                       {["Home", "Work", "Services", "About"].map(item => (
                         <button key={item} onClick={() => handleNavClick(item)}
-                          className="block text-sm text-stone-400 hover:text-white transition-colors py-1 uppercase tracking-wider font-medium">{item}</button>
+                          className="block text-sm text-stone-500 hover:text-white transition-colors py-1 uppercase tracking-wider font-medium">{item}</button>
                       ))}
                     </div>
                     <div>
                       <h4 className="text-[10px] uppercase tracking-[0.3em] text-stone-600 font-bold mb-4">Connect</h4>
                       {["Twitter/X", "LinkedIn", "Dribbble", "Instagram"].map(item => (
-                        <a key={item} href="#" className="block text-sm text-stone-400 hover:text-white transition-colors py-1 uppercase tracking-wider font-medium">{item}</a>
+                        <a key={item} href="#" className="block text-sm text-stone-500 hover:text-white transition-colors py-1 uppercase tracking-wider font-medium">{item}</a>
                       ))}
                     </div>
                   </div>
 
-                  {/* Right: CTA */}
-                  <div className="flex flex-col items-start md:items-end justify-between">
-                    <div className="text-right">
-                      <h4 className="text-[10px] uppercase tracking-[0.3em] text-stone-600 font-bold mb-2">Start a Project</h4>
-                      <a href="mailto:hello@locuspath.co" className="font-display text-xl md:text-2xl font-bold text-white hover:text-red-500 transition-colors uppercase tracking-tight">hello@locuspath.co</a>
-                    </div>
-                    <p className="text-[9px] uppercase tracking-[0.3em] text-stone-700 mt-8 md:mt-0">© 2024 LocusPath. All rights reserved.</p>
+                  <div className="flex flex-col items-start md:items-end justify-end">
+                    <p className="text-[9px] uppercase tracking-[0.3em] text-stone-700">© {new Date().getFullYear()} LocusPath. All rights reserved.</p>
                   </div>
                 </div>
               </motion.div>
