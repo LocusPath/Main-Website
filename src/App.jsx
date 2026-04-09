@@ -52,16 +52,16 @@ const easeHighFashion = [0.22, 1, 0.36, 1];
 
 // Liquid Ripple & Chromatic Aberration Transition (DOM based)
 const liquidDropIn = {
-  hidden: { opacity: 0, filter: "url(#liquidMask) blur(4px)", scale: 0.98, y: 30 },
+  hidden: { opacity: 0, filter: "url(#liquidMask) blur(6px)", scale: 0.98, y: 30 },
   visible: { 
-    opacity: 1, filter: "blur(0px)", scale: 1, y: 0, 
+    opacity: 1, filter: "none", scale: 1, y: 0, 
     transition: { ease: easeHighFashion, duration: 1.5 } 
   }
 };
 
 const staggerText = {
   hidden: { opacity: 0, filter: "url(#liquidMask)", y: 20 },
-  visible: { opacity: 1, filter: "blur(0px)", y: 0, transition: { ease: easeHighFashion, duration: 1.2 } }
+  visible: { opacity: 1, filter: "none", y: 0, transition: { ease: easeHighFashion, duration: 1.2 } }
 };
 
 // --- PHYSICS ENGINES ---
@@ -121,14 +121,18 @@ const MagneticFloat = ({ children, force = 10 }) => {
   );
 };
 
-const FocalCameraBlur = ({ children, offset = ["start end", "end start"], blurStrength = 5 }) => {
+const FocalCameraBlur = ({ children, offset = ["start end", "end start"], blurStrength = 4 }) => {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset });
-  // Blurs at 0 (entering) and 1 (leaving), perfectly sharp at 0.5 (center screen)
-  const blur = useTransform(scrollYProgress, [0, 0.5, 1], [blurStrength, 0, blurStrength]);
+  
+  // Wider range in the middle (0.2 to 0.8) where blur is exactly 0
+  const blur = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [blurStrength, 0, 0, blurStrength]);
+  
+  // Use 'none' when blur is 0 to ensure absolute clarity
+  const filter = useTransform(blur, value => value <= 0.1 ? "none" : `blur(${value}px)`);
   
   return (
-    <motion.div ref={ref} style={{ filter: useTransform(blur, value => `blur(${value}px)`) }}>
+    <motion.div ref={ref} style={{ filter }}>
       {children}
     </motion.div>
   );
@@ -298,36 +302,43 @@ export default function App() {
             </motion.div>
           </section>
 
-          {/* ----------- ARCHIVE SECTION ----------- */}
-          <section id="archive" className="relative z-10 pt-48 pb-32 px-4 md:px-10">
-            <motion.div onViewportEnter={() => setActiveTab("Archive")} viewport={{ margin: "-30%", amount: 0.2 }}>
-               <div className="max-w-[1600px] mx-auto relative perspective-[1200px]">
+          {/* ----------- ARCHIVE SECTION (INFINITE MARQUEE) ----------- */}
+        <section id="archive" className="relative z-10 py-32 border-y border-white/5 overflow-hidden">
+          <motion.div onViewportEnter={() => setActiveTab("Archive")} viewport={{ margin: "-30%", amount: 0.2 }}>
+            <div className="flex flex-col gap-6">
+               <div className="px-4 md:px-10 max-w-[1600px] mx-auto w-full">
                   <FocalCameraBlur offset={["start end", "center center"]} blurStrength={2}>
                     <motion.h1 
                        initial="hidden" whileInView="visible" viewport={{ once: true }} variants={liquidDropIn}
-                       className="font-display text-4xl md:text-8xl font-bold uppercase tracking-tighter mb-20 text-stone-300"
+                       className="font-display text-xl md:text-3xl font-bold uppercase tracking-tight text-stone-500 mb-2"
                     >
-                       Archive Log
+                       The Archive
                     </motion.h1>
                   </FocalCameraBlur>
-                  <motion.div style={{ x: driftLeft }} className="space-y-4">
-                     {works.map((work, i) => (
-                        <MagneticFloat key={work.id} force={3}>
-                           <motion.div 
-                              initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}
-                              variants={staggerText} transition={{ delay: i * 0.1 }}
-                              className="flex w-full items-baseline justify-between border-b border-white/5 pb-8 pt-4 hover:border-white transition-colors cursor-pointer group"
-                              onClick={() => setSelectedWork(work)}
-                           >
-                              <h3 className="font-display text-3xl md:text-6xl uppercase font-bold text-stone-500 group-hover:text-white transition-colors">{work.title}</h3>
-                              <p className="font-mono text-xs md:text-sm uppercase text-red-500 tracking-widest">{work.category}</p>
-                           </motion.div>
-                        </MagneticFloat>
-                     ))}
+               </div>
+
+               {/* The Marquee Row */}
+               <div className="relative flex whitespace-nowrap overflow-hidden py-6">
+                  <motion.div 
+                    animate={{ x: ["0%", "-50%"] }} 
+                    transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                    className="flex items-center gap-10 pr-10"
+                  >
+                    {[...works, ...works, ...works, ...works].map((work, i) => (
+                       <div 
+                          key={i} 
+                          className="flex items-baseline gap-4 group cursor-pointer"
+                          onClick={() => setSelectedWork(work)}
+                       >
+                          <h3 className="font-display text-3xl md:text-[4vw] uppercase font-bold text-stone-800 group-hover:text-white transition-all duration-700 group-hover:scale-[1.02]">{work.title}</h3>
+                          <span className="font-mono text-xs md:text-sm text-red-600 opacity-30 group-hover:opacity-100 transition-opacity">/{work.category}</span>
+                       </div>
+                    ))}
                   </motion.div>
                </div>
-            </motion.div>
-          </section>
+            </div>
+          </motion.div>
+        </section>
 
           {/* ----------- ABOUT SECTION ----------- */}
           <section id="about" className="relative z-10 pt-48 pb-64 px-4 md:px-10">
