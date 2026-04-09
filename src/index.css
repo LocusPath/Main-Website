@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -11,21 +11,36 @@
 html,
 body,
 #root {
-  min-height: 100%;
+  min-height: 100vh;
+  background-color: #050505;
+  color: #f5f5f5;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  @apply m-0 bg-stone-950 font-sans text-stone-100 antialiased;
+  @apply font-sans antialiased text-stone-300;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(220, 38, 38, 0.6);
+  color: white;
 }
 
 .section-shell {
-  @apply mx-auto w-full max-w-7xl px-6 md:px-10;
+  @apply mx-auto w-full max-w-screen-2xl px-6 md:px-12 lg:px-20;
 }
 
-.muted-kicker {
-  @apply text-xs uppercase tracking-[0.3em] text-stone-400;
+.noise-overlay {
+  @apply pointer-events-none fixed inset-0 z-50 mix-blend-overlay opacity-30;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E");
 }
 
-.glass-card {
-  @apply rounded-2xl border border-white/10 bg-white/[0.03] shadow-glow backdrop-blur;
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

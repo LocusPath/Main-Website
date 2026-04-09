@@ -1,257 +1,254 @@
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
+
+// --- Data ---
 const services = [
-  {
-    title: "Web Design & Development",
-    points: ["Responsive Design", "Custom CMS", "E-Commerce"],
-  },
-  {
-    title: "Brand Identity Design",
-    points: ["Logo Design", "Brand Guidelines", "Visual Identity"],
-  },
-  {
-    title: "UI/UX Design",
-    points: ["User Research", "Wireframing", "Prototyping"],
-  },
-  {
-    title: "Digital Marketing & SEO",
-    points: ["SEO Strategy", "Content Marketing", "Social Media"],
-  },
-  {
-    title: "E-Commerce Solutions",
-    points: ["Shopify", "WooCommerce", "Custom Stores"],
-  },
-  {
-    title: "Maintenance & Support",
-    points: ["24/7 Support", "Security", "Updates"],
-  },
+  { title: "Web Design & Development", points: ["Responsive Design", "Custom CMS", "WebGL & 3D"] },
+  { title: "Brand Identity Design", points: ["Verbal Identity", "Design Systems", "Logomarks"] },
+  { title: "UI/UX Design", points: ["Interactive Prototypes", "Wireframing", "User Research"] },
+  { title: "Digital Marketing & SEO", points: ["Growth Strategy", "Content creation", "Analytics"] }
 ];
 
 const processSteps = [
-  {
-    title: "Discovery",
-    text: "We dive deep into your brand, audience, and goals. Research-driven insights guide every creative decision we make.",
-  },
-  {
-    title: "Design",
-    text: "Wireframes evolve into stunning visual designs. We iterate based on your feedback until every pixel is perfect.",
-  },
-  {
-    title: "Develop",
-    text: "Clean, performant code brings designs to life. Mobile-first responsive development with rigorous testing.",
-  },
-  {
-    title: "Deploy & Grow",
-    text: "Launch with confidence. Ongoing support, analytics, and optimization ensure continuous growth for your brand.",
-  },
+  { title: "Discovery", text: "Research-driven insights guide every creative decision." },
+  { title: "Design", text: "Wireframes evolve into stunning, high-contrast visual systems." },
+  { title: "Develop", text: "Performant code, fluid motion, and rigorous testing." },
+  { title: "Deploy", text: "Launch with confidence and measure continuous growth." }
 ];
 
 const works = [
   {
+    id: "w1",
     category: "Cafe",
     title: "Brew & Bean",
     text: "Complete brand redesign and website for an artisan coffee shop.",
+    img: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1600&auto=format&fit=crop",
+    artDir: "John Doe",
+    visual: "LocusPath Team"
   },
   {
+    id: "w2",
     category: "Retail",
     title: "Luxe Avenue",
     text: "Full e-commerce platform for a luxury fashion boutique.",
+    img: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1600&auto=format&fit=crop",
+    artDir: "Jane Smith",
+    visual: "Studio Alpha"
   },
+  {
+    id: "w3",
+    category: "Tech",
+    title: "Aura Systems",
+    text: "Dark-mode dashboard with interactive 3D data visualization.",
+    img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop",
+    artDir: "LocusPath",
+    visual: "In-house"
+  }
 ];
 
-function App() {
+// --- Components ---
+
+const NavBar = () => {
   return (
-    <div className="relative overflow-x-hidden bg-stone-950">
-      <div className="pointer-events-none absolute inset-0 bg-grain-light" />
-
-      <header className="section-shell sticky top-0 z-30 mt-4">
-        <div className="glass-card flex items-center justify-between px-5 py-4">
-          <div className="text-sm font-semibold tracking-[0.2em]">LOCUSPATH</div>
-          <nav className="hidden gap-6 text-sm text-stone-300 md:flex">
-            {["Home", "About", "Services", "Portfolio", "Contact"].map((item) => (
-              <a key={item} href="#" className="transition hover:text-white">
-                {item}
-              </a>
-            ))}
-          </nav>
-          <button className="rounded-full border border-white/20 px-4 py-2 text-xs font-medium uppercase tracking-widest transition hover:bg-white hover:text-stone-900">
-            Start a Project
+    <div className="fixed bottom-8 w-full flex justify-center z-50 pointer-events-none">
+      <motion.nav 
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="pointer-events-auto flex items-center gap-2 rounded-full bg-[#111]/80 border border-white/10 backdrop-blur-xl px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.7)]"
+      >
+        {["Home", "Work", "Archive", "About"].map((item) => (
+          <button key={item} className="px-5 py-2 rounded-full text-xs font-semibold tracking-widest uppercase text-stone-400 hover:text-white hover:bg-white/10 transition-colors">
+            {item}
           </button>
-        </div>
-      </header>
+        ))}
+      </motion.nav>
+    </div>
+  );
+};
 
-      <main className="space-y-24 pb-20 pt-16 md:space-y-32">
-        <section className="section-shell">
-          <p className="muted-kicker mb-6">Now Accepting New Projects - 2026</p>
-          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-            <div>
-              <h1 className="max-w-4xl text-4xl font-semibold leading-tight text-stone-100 md:text-6xl">
-                We Craft Digital Magic <span className="text-stone-400">For Your Brand</span>
-              </h1>
-              <p className="mt-6 max-w-2xl text-lg text-stone-300">
-                We are a creative agency that transforms businesses into unforgettable digital
-                experiences. From cozy cafes to luxury boutiques, we make your brand shine online.
-              </p>
-              <div className="mt-10 flex flex-wrap gap-4">
-                <button className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-stone-900 transition hover:bg-stone-200">
-                  View Our Work
-                </button>
-                <button className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold transition hover:bg-white hover:text-stone-900">
-                  Let&apos;s Talk
-                </button>
-              </div>
-              <div className="mt-10 flex flex-wrap gap-3 text-xs uppercase tracking-[0.25em] text-stone-400">
-                {[
-                  "Web Design",
-                  "Branding",
-                  "UI/UX",
-                  "Development",
-                  "E-Commerce",
-                  "SEO",
-                  "Marketing",
-                  "Analytics",
-                ].map((tag) => (
-                  <span key={tag} className="rounded-full border border-white/10 px-4 py-2">
-                    {tag}
-                  </span>
-                ))}
-              </div>
+export default function App() {
+  const { scrollYProgress } = useScroll();
+  const yHero = useTransform(scrollYProgress, [0, 1], [0, 300]);
+  const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+
+  return (
+    <div className="relative min-h-screen bg-[#050505] text-[#f5f5f5] selection:bg-red-600 selection:text-white">
+      {/* Noise Overlay */}
+      <div className="noise-overlay" />
+
+      {/* Deep Red Bottom Glow */}
+      <div className="fixed bottom-0 left-0 right-0 h-[800px] pointer-events-none bg-red-aura z-0 opacity-40 mix-blend-screen" />
+
+      <NavBar />
+
+      <main className="relative z-10">
+        
+        {/* HERO SECTION */}
+        <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
+          <motion.div style={{ y: yHero, opacity: opacityHero }} className="text-center px-4">
+            <div className="overflow-hidden">
+              <motion.h1 
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+                className="font-display font-bold text-[12vw] leading-[0.8] tracking-tighter uppercase"
+              >
+                L/OCUS
+              </motion.h1>
             </div>
-            <div className="glass-card relative min-h-80 overflow-hidden p-8">
-              <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
-              <p className="muted-kicker mb-6">Why Brands Choose Us</p>
-              <ul className="space-y-6">
-                {[
-                  ["Pixel-Perfect Design", "Unique, hand-crafted visuals tailored to your identity."],
-                  ["Lightning-Fast Delivery", "Production-ready websites on tight timelines."],
-                  ["Built to Convert", "Every screen designed to drive measurable growth."],
-                ].map(([title, desc]) => (
-                  <li key={title}>
-                    <h3 className="text-lg font-semibold">{title}</h3>
-                    <p className="mt-1 text-stone-300">{desc}</p>
-                  </li>
-                ))}
-              </ul>
+            <div className="overflow-hidden">
+              <motion.h1 
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+                className="font-display font-bold text-[12vw] leading-[0.8] tracking-tighter uppercase"
+              >
+                PATH
+              </motion.h1>
             </div>
-          </div>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 1 }}
+              className="mt-8 text-stone-400 max-w-lg mx-auto text-sm md:text-base font-medium tracking-wide uppercase"
+            >
+              Interactive web design. Brutalist minimalism. Contemporary & precise.
+            </motion.p>
+          </motion.div>
+          
+          {/* Scroll Indicator */}
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }}
+            className="absolute bottom-32 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4"
+          >
+            <div className="w-[1px] h-12 bg-gradient-to-b from-transparent via-stone-500 to-transparent animate-float" />
+          </motion.div>
         </section>
 
-        <section className="section-shell grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <p className="muted-kicker mb-4">Who We Are</p>
-            <h2 className="text-3xl font-semibold md:text-5xl">
-              We Don&apos;t Just Build Websites. We Build Your Vision.
-            </h2>
-          </div>
-          <div className="space-y-6 text-stone-300">
-            <p>
-              LocusPath is a fresh creative agency driven by passion for pixel-perfect design and
-              powerful digital storytelling.
-            </p>
-            <p>
-              We partner with cafes, restaurants, boutiques, fitness studios, salons, and tech
-              startups to create digital presences that convert visitors into loyal customers.
-            </p>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {["Results-Driven", "Fresh Perspective", "Dedicated Support"].map((item) => (
-                <div key={item} className="glass-card p-4 text-sm text-stone-200">
-                  {item}
+        {/* SERVICES (Swiss Typography layout) */}
+        <motion.section 
+          initial={{ opacity: 0, y: 100 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="section-shell py-32 md:py-48"
+        >
+          <div className="grid md:grid-cols-2 gap-20">
+            <div>
+              <h2 className="font-display text-4xl md:text-7xl font-bold uppercase leading-none tracking-tight">Services</h2>
+              <p className="mt-6 text-stone-400 max-w-md">Services that transform. We partner with elite brands to create digital presences that convert.</p>
+            </div>
+            <div className="space-y-12">
+              {services.map((srv, i) => (
+                <div key={i} className="group border-b border-white/10 pb-6">
+                  <div className="flex justify-between items-baseline mb-4">
+                    <span className="text-xs text-stone-500 font-mono">{(i + 1).toString().padStart(2, '0')}</span>
+                    <ArrowUpRight className="w-5 h-5 text-stone-600 transition-transform group-hover:text-white group-hover:translate-x-1 group-hover:-translate-y-1" />
+                  </div>
+                  <h3 className="font-display text-2xl md:text-4xl uppercase font-bold tracking-tight">{srv.title}</h3>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {srv.points.map(pt => (
+                      <span key={pt} className="text-xs uppercase tracking-widest text-stone-400 border border-white/10 rounded-full px-3 py-1">
+                        {pt}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        <section className="section-shell">
-          <p className="muted-kicker mb-4">What We Do</p>
-          <h2 className="mb-10 text-3xl font-semibold md:text-5xl">Services That Transform</h2>
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {services.map((service, idx) => (
-              <article key={service.title} className="glass-card p-6">
-                <p className="mb-4 text-sm text-stone-400">0{idx + 1}</p>
-                <h3 className="text-xl font-semibold">{service.title}</h3>
-                <ul className="mt-5 space-y-2 text-sm text-stone-300">
-                  {service.points.map((point) => (
-                    <li key={point}>- {point}</li>
-                  ))}
-                </ul>
-              </article>
+        {/* WORKS ARCHIVE (Masonry style / Expansive cards) */}
+        <motion.section 
+          initial={{ opacity: 0, y: 100 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="section-shell py-32"
+        >
+          <div className="flex justify-between items-end mb-20">
+            <h2 className="font-display text-4xl md:text-7xl font-bold uppercase leading-none tracking-tight">Archive</h2>
+            <p className="hidden md:block uppercase tracking-widest text-xs text-red-500">Selected Works 2026</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {works.map((work, i) => (
+              <motion.div 
+                key={work.id}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
+                className="group relative cursor-pointer"
+              >
+                <div className="overflow-hidden rounded-md bg-[#111] aspect-[4/5] relative">
+                  <motion.img 
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                    src={work.img} 
+                    alt={work.title} 
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute bottom-0 left-0 p-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-red-500 mb-2">{work.category}</p>
+                    <h3 className="font-display text-3xl font-bold uppercase">{work.title}</h3>
+                  </div>
+                </div>
+              </motion.div>
             ))}
           </div>
-        </section>
+        </motion.section>
 
-        <section className="section-shell">
-          <p className="muted-kicker mb-4">How We Work</p>
-          <h2 className="mb-10 text-3xl font-semibold md:text-5xl">Our Process</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {processSteps.map((step, idx) => (
-              <article key={step.title} className="glass-card p-6">
-                <p className="text-sm text-stone-400">0{idx + 1}</p>
-                <h3 className="mt-2 text-2xl font-semibold">{step.title}</h3>
-                <p className="mt-3 text-stone-300">{step.text}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="section-shell">
-          <p className="muted-kicker mb-4">Our Work</p>
-          <h2 className="mb-10 text-3xl font-semibold md:text-5xl">Showcase Projects</h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            {works.map((work) => (
-              <article key={work.title} className="glass-card group overflow-hidden p-6">
-                <div className="h-48 rounded-xl border border-white/10 bg-gradient-to-br from-stone-800 to-stone-900 transition group-hover:scale-[1.01]" />
-                <p className="mt-5 text-sm uppercase tracking-[0.25em] text-stone-500">{work.category}</p>
-                <h3 className="mt-2 text-2xl font-semibold">{work.title}</h3>
-                <p className="mt-2 text-stone-300">{work.text}</p>
-                <button className="mt-5 text-sm font-semibold text-white/90">View Project -&gt;</button>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="section-shell">
-          <div className="glass-card grid gap-8 p-8 md:grid-cols-2 md:p-10">
-            <div>
-              <p className="muted-kicker mb-4">Get In Touch</p>
-              <h2 className="text-3xl font-semibold md:text-5xl">Let&apos;s Connect</h2>
-              <p className="mt-4 text-stone-300">
-                Have a project in mind? We&apos;d love to hear about it. Your next chapter starts
-                with one conversation.
-              </p>
-              <div className="mt-8 space-y-3 text-sm text-stone-300">
-                <p>locus.path1@gmail.com</p>
-                <p>+91 8467853399 / +91 8287768083</p>
-                <p>24/7 Support Available</p>
+        {/* PROCESS WITH 3D/Hover feel */}
+        <motion.section 
+          initial={{ opacity: 0, y: 100 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="section-shell py-32 border-t border-white/5 relative"
+        >
+          <h2 className="font-display text-4xl md:text-7xl font-bold uppercase leading-none tracking-tight mb-20 text-center">Protocol</h2>
+          <div className="grid md:grid-cols-4 gap-4">
+            {processSteps.map((step, i) => (
+              <div key={step.title} className="p-8 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/[0.05] transition-colors relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <span className="font-display text-8xl font-bold italic">{i+1}</span>
+                </div>
+                <h3 className="font-display text-xl uppercase font-bold text-white mb-4">{step.title}</h3>
+                <p className="text-sm text-stone-400 relative z-10">{step.text}</p>
               </div>
-            </div>
-            <form className="space-y-4">
-              {["Your Name", "Email Address", "Business Type", "Project Budget"].map((placeholder) => (
-                <input
-                  key={placeholder}
-                  className="w-full rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm outline-none transition focus:border-white/50"
-                  placeholder={placeholder}
-                />
-              ))}
-              <textarea
-                rows={4}
-                className="w-full rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm outline-none transition focus:border-white/50"
-                placeholder="Tell Us About Your Project"
-              />
-              <button className="w-full rounded-xl bg-white px-6 py-3 text-sm font-semibold text-stone-900 transition hover:bg-stone-200">
-                Send Message
-              </button>
-            </form>
+            ))}
           </div>
-        </section>
-      </main>
+        </motion.section>
 
-      <footer className="section-shell border-t border-white/10 py-8 text-sm text-stone-400">
-        <div className="flex flex-col justify-between gap-4 md:flex-row">
-          <p>Crafting digital experiences that inspire, engage, and convert.</p>
-          <p>© 2026 LocusPath Creative Agency. All rights reserved.</p>
-        </div>
-      </footer>
+        {/* FOOTER */}
+        <motion.footer 
+          initial={{ opacity: 0, y: 100 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="section-shell py-32 border-t border-red-900/30"
+        >
+          <div className="grid md:grid-cols-2 gap-20">
+            <div>
+              <h2 className="font-display text-5xl md:text-8xl font-bold uppercase leading-none tracking-tight">Let's<br/>Connect.</h2>
+              <p className="mt-8 text-stone-400">locus.path1@gmail.com</p>
+              <p className="text-stone-400">+91 8467853399 / +91 8287768083</p>
+            </div>
+            <div className="flex flex-col justify-end items-start md:items-end gap-4">
+              <a href="#" className="flex items-center gap-2 text-sm uppercase tracking-widest hover:text-white transition-colors text-stone-400">Twitter(X)</a>
+              <a href="#" className="flex items-center gap-2 text-sm uppercase tracking-widest hover:text-white transition-colors text-stone-400">Instagram</a>
+              <a href="#" className="flex items-center gap-2 text-sm uppercase tracking-widest hover:text-white transition-colors text-stone-400">Github</a>
+            </div>
+          </div>
+          <p className="mt-32 text-center text-[10px] uppercase tracking-[0.3em] text-stone-600">
+            © 2026 LocusPath. All Rights Reserved. Crafted with deep red gradients.
+          </p>
+        </motion.footer>
+      </main>
     </div>
   );
 }
-
-export default App;
