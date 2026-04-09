@@ -2,6 +2,7 @@ import { motion, useScroll, useTransform, AnimatePresence, useVelocity, useSprin
 import { useEffect, useState, useRef } from "react";
 import { ArrowUpRight, ArrowDown, X, Send, CheckCircle } from "lucide-react";
 import Lenis from "lenis";
+import RestaurantPage from "./RestaurantPage";
 
 // --- Data ---
 const services = [
@@ -29,19 +30,27 @@ const capabilities = [
 
 const works = [
   {
-    id: "w1", category: "Cafe", title: "Brew & Bean",
+    id: "w1", category: "Restaurant", title: "Basilico Blu",
+    text: "Complete brand identity, website, and reservation system for a premium Indo-Italian fine-dining restaurant. Wood-fired artisan cuisine meets vibrant Indian spices.",
+    img: "/restaurant/hero_dish.png",
+    artDir: "LocusPath", visual: "In-house", year: "2025",
+    isLive: true, liveType: "restaurant",
+    liveUrl: "https://restaurent-sample-1.vercel.app/"
+  },
+  {
+    id: "w2", category: "Cafe", title: "Brew & Bean",
     text: "Complete brand redesign and website for an artisan coffee shop. Developed using headless architecture with a custom CMS.",
     img: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1600&auto=format&fit=crop",
     artDir: "John Doe", visual: "LocusPath Team", year: "2024"
   },
   {
-    id: "w2", category: "Retail", title: "Luxe Avenue",
+    id: "w3", category: "Retail", title: "Luxe Avenue",
     text: "Full e-commerce platform for a luxury fashion boutique with an elite checkout experience and AR try-on.",
     img: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1600&auto=format&fit=crop",
     artDir: "Jane Smith", visual: "Studio Alpha", year: "2024"
   },
   {
-    id: "w3", category: "Tech", title: "Aura Systems",
+    id: "w4", category: "Tech", title: "Aura Systems",
     text: "Dark-mode dashboard with interactive 3D data visualization specifically for the biotech industry.",
     img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop",
     artDir: "LocusPath", visual: "In-house", year: "2023"
@@ -122,6 +131,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("Home");
   const [selectedWork, setSelectedWork] = useState(null);
   const [showContact, setShowContact] = useState(false);
+  const [showRestaurant, setShowRestaurant] = useState(false);
   const [formState, setFormState] = useState("idle"); // idle | sending | sent | error
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", budget: "", message: "" });
 
@@ -310,7 +320,7 @@ export default function App() {
                       <motion.div key={work.id} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}
                         variants={card3DReveal} transition={{ delay: i * 0.1 }} style={{ transformOrigin: "center bottom" }}>
                          <MagneticFloat force={8}>
-                           <div className="group relative cursor-pointer w-full h-full" onClick={() => setSelectedWork(work)}>
+                           <div className="group relative cursor-pointer w-full h-full" onClick={() => work.isLive ? setShowRestaurant(true) : setSelectedWork(work)}>
                              <motion.div layoutId={`proj-container-${work.id}`} className="overflow-hidden rounded-2xl bg-stone-200 aspect-[4/5] relative shadow-lg group-hover:shadow-[0_15px_40px_rgba(0,0,0,0.25)] transition-shadow duration-500">
                                <motion.img layoutId={`proj-img-${work.id}`}
                                  whileHover={{ scale: 1.05, filter: "saturate(1.1)" }}
@@ -325,7 +335,10 @@ export default function App() {
                                  <h3 className="font-display text-lg font-bold uppercase text-stone-900 group-hover:text-red-600 transition-colors">{work.title}</h3>
                                  <p className="text-xs text-stone-500 mt-1">{work.text.substring(0, 60)}...</p>
                                </div>
-                               <span className="text-[9px] uppercase tracking-[0.15em] text-red-600 border border-red-600/30 px-3 py-1 rounded-full font-bold mt-1 shrink-0">{work.category}</span>
+                               <div className="flex items-center gap-2 mt-1 shrink-0">
+                                  {work.isLive && <span className="text-[9px] uppercase tracking-[0.15em] text-emerald-500 border border-emerald-500/30 px-3 py-1 rounded-full font-bold flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Live</span>}
+                                  <span className="text-[9px] uppercase tracking-[0.15em] text-red-600 border border-red-600/30 px-3 py-1 rounded-full font-bold">{work.category}</span>
+                                </div>
                              </div>
                            </div>
                          </MagneticFloat>
@@ -717,6 +730,13 @@ export default function App() {
               )}
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══════════ RESTAURANT OVERLAY ═══════════ */}
+      <AnimatePresence>
+        {showRestaurant && (
+          <RestaurantPage onClose={() => setShowRestaurant(false)} />
         )}
       </AnimatePresence>
     </div>
