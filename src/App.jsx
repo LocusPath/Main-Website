@@ -501,9 +501,9 @@ export default function App() {
                     </div>
                     <div>
                       <h4 className="text-[10px] uppercase tracking-[0.3em] text-stone-600 font-bold mb-4">Connect</h4>
-                      {["Twitter/X", "LinkedIn", "Dribbble", "Instagram"].map(item => (
-                        <a key={item} href="#" className="block text-sm text-stone-500 hover:text-white transition-colors py-1 uppercase tracking-wider font-medium">{item}</a>
-                      ))}
+                      <a href="https://x.com/LocusPath" target="_blank" rel="noopener noreferrer" className="block text-sm text-stone-500 hover:text-white transition-colors py-1 uppercase tracking-wider font-medium">Twitter/X</a>
+                      <a href="https://www.linkedin.com/in/locus-path-445274402" target="_blank" rel="noopener noreferrer" className="block text-sm text-stone-500 hover:text-white transition-colors py-1 uppercase tracking-wider font-medium">LinkedIn</a>
+                      <a href="https://dribbble.com/locuspath" target="_blank" rel="noopener noreferrer" className="block text-sm text-stone-500 hover:text-white transition-colors py-1 uppercase tracking-wider font-medium">Dribbble</a>
                     </div>
                   </div>
 
