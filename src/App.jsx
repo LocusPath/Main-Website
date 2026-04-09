@@ -38,15 +38,15 @@ const works = [
   {
     id: "w2", category: "Cafe", title: "Brew & Soul",
     text: "Full brand identity and immersive website for an artisan coffee experience. Bean-to-cup philosophy with curated single-origin selections.",
-    img: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1600&auto=format&fit=crop",
+    img: "/works/cafe.png",
     artDir: "LocusPath", visual: "In-house", year: "2025",
     isLive: true, liveUrl: "https://cafe-portal-beta.vercel.app/"
   },
   {
     id: "w3", category: "Boutique", title: "Maison Élégance",
     text: "Luxury fashion boutique e-commerce platform with curated collections, editorial lookbooks, and an elite shopping experience.",
-    img: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1600&auto=format&fit=crop",
-    artDir: "LocusPath", visual: "In-house", year: "2025",
+    img: "/works/boutique.png",
+    artDir: "LocusPath", visual: "In-house", year: "2026",
     isLive: true, liveUrl: "https://boutique-indol.vercel.app/"
   }
 ];
