@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Circular border -->
+  <circle cx="100" cy="100" r="90" fill="none" stroke="#e3a93c" stroke-width="1.5" opacity="0.6"/>
+  <circle cx="100" cy="100" r="82" fill="none" stroke="#e3a93c" stroke-width="0.5" opacity="0.3"/>
+  
+  <!-- Basil leaf motif -->
+  <g transform="translate(100,45)" opacity="0.85">
+    <path d="M0,-8 C-12,5 -8,22 0,28 C8,22 12,5 0,-8Z" fill="none" stroke="#3a9e8f" stroke-width="1.5"/>
+    <path d="M0,-8 C-6,8 -4,20 0,28" fill="none" stroke="#3a9e8f" stroke-width="0.8" opacity="0.6"/>
+    <path d="M-8,10 C-2,12 2,12 8,10" fill="none" stroke="#3a9e8f" stroke-width="0.5" opacity="0.4"/>
+  </g>
+  
+  <!-- BB Monogram -->
+  <text x="100" y="115" text-anchor="middle" font-family="Georgia, 'Playfair Display', serif" font-size="52" font-weight="700" fill="#e3a93c" letter-spacing="4">BB</text>
+  
+  <!-- Decorative line -->
+  <line x1="60" y1="128" x2="140" y2="128" stroke="#e3a93c" stroke-width="0.8" opacity="0.4"/>
+  
+  <!-- Subtitle -->
+  <text x="100" y="148" text-anchor="middle" font-family="'Inter', Arial, sans-serif" font-size="9" fill="#c9dcd6" letter-spacing="5" text-transform="uppercase">BASILICO BLU</text>
+  
+  <!-- EST -->
+  <text x="100" y="165" text-anchor="middle" font-family="'Inter', Arial, sans-serif" font-size="7" fill="#8baaa1" letter-spacing="3">EST. 2018</text>
+</svg>

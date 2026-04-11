@@ -110,12 +110,47 @@ export default function RestaurantPage({ onClose }) {
             <h1 className="bb-brand-title">Basilico Blu</h1>
           </div>
 
-          <div className="bb-nav-links">
+          <div className="bb-nav-links lg:flex hidden">
             <span className={`bb-nav-item ${currentPage === 'home' ? 'active' : ''}`} onClick={() => navigateTo('home')}>Home</span>
             <span className={`bb-nav-item ${currentPage === 'menu' ? 'active' : ''}`} onClick={() => navigateTo('menu')}>Menu</span>
             <span className={`bb-nav-item ${currentPage === 'booking' ? 'active' : ''}`} onClick={() => navigateTo('booking')}>Reservations</span>
           </div>
+
+          {/* Mobile Menu Toggle */}
+          <div className="bb-menu-toggle lg:hidden" onClick={() => navigateTo('mobile-nav')}>
+            <div className="bb-hamburger">
+              <span />
+              <span />
+            </div>
+          </div>
         </motion.nav>
+
+        {/* Mobile Nav Overlay */}
+        <AnimatePresence>
+          {currentPage === 'mobile-nav' && (
+            <motion.div
+              className="bb-mobile-nav-overlay"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="bb-mobile-nav-content">
+                {['home', 'menu', 'booking'].map((page) => (
+                  <motion.div
+                    key={page}
+                    className="bb-mobile-nav-link"
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigateTo(page)}
+                  >
+                    {page === 'booking' ? 'Reservations' : page.charAt(0).toUpperCase() + page.slice(1)}
+                  </motion.div>
+                ))}
+                <button className="bb-mobile-close" onClick={() => navigateTo('home')}>Close</button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Pages */}
         <AnimatePresence mode="wait">
@@ -232,29 +267,31 @@ function HomePage({ setPage }) {
       </section>
 
       {/* Gallery Strip */}
-      <section className="bb-gallery-strip">
-        <motion.div
-          className="bb-gallery-grid"
-          variants={sectionReveal}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          transition={sectionTransition}
-        >
-          {[
-            { src: '/restaurant/pizza.png', label: 'Artisan Wood-Fired' },
-            { src: '/restaurant/pasta.png', label: 'Handmade Pasta' },
-            { src: '/restaurant/hero_dish.png', label: 'Signature Dishes' },
-            { src: '/restaurant/pasta_dish.png', label: 'Rich Flavors' },
-            { src: '/restaurant/hot_dish.png', label: 'Indo-Italian Fusion' },
-            { src: '/restaurant/interior.png', label: 'Beautiful Setting' },
-          ].map((item, i) => (
-            <div key={i} className="bb-gallery-item">
-              <img src={item.src} alt={item.label} className="bb-gallery-img" />
-              <div className="bb-gallery-label">{item.label}</div>
-            </div>
-          ))}
-        </motion.div>
+      <section className="bb-gallery-strip overflow-hidden">
+        <div className="bb-gallery-container">
+          <motion.div
+            className="bb-gallery-grid"
+            variants={sectionReveal}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            transition={sectionTransition}
+          >
+            {[
+              { src: '/restaurant/pizza.png', label: 'Artisan Wood-Fired' },
+              { src: '/restaurant/pasta.png', label: 'Handmade Pasta' },
+              { src: '/restaurant/hero_dish.png', label: 'Signature Dishes' },
+              { src: '/restaurant/pasta_dish.png', label: 'Rich Flavors' },
+              { src: '/restaurant/hot_dish.png', label: 'Indo-Italian Fusion' },
+              { src: '/restaurant/interior.png', label: 'Beautiful Setting' },
+            ].map((item, i) => (
+              <motion.div key={i} className="bb-gallery-item" whileTap={{ scale: 0.98 }}>
+                <img src={item.src} alt={item.label} className="bb-gallery-img" />
+                <div className="bb-gallery-label">{item.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
       </section>
 
       {/* Chef Story */}
@@ -709,15 +746,21 @@ const restaurantCSS = `
 .bb-detail-text { font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.8; color: #c9dcd6; }
 
 /* ── GALLERY ── */
-.bb-gallery-strip { padding: 5rem 8%; background: rgba(0, 20, 16, 0.5); }
+.bb-gallery-strip { padding: 5rem 0; background: rgba(0, 20, 16, 0.5); }
+.bb-gallery-container { padding: 0 8%; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.bb-gallery-container::-webkit-scrollbar { display: none; }
 .bb-gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
   gap: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  width: max-content;
+  padding-bottom: 2rem;
 }
-.bb-gallery-item { position: relative; overflow: hidden; border-radius: 12px; aspect-ratio: 4/3; }
+.bb-gallery-item { position: relative; overflow: hidden; border-radius: 12px; width: 400px; aspect-ratio: 4/3; flex-shrink: 0; }
+@media (max-width: 768px) {
+  .bb-gallery-grid { padding: 0 5%; gap: 1.5rem; }
+  .bb-gallery-item { width: 80vw; scroll-snap-align: center; }
+  .bb-gallery-container { scroll-snap-type: x mandatory; padding: 0; }
+}
 .bb-gallery-img {
   width: 100%;
   height: 100%;
@@ -932,11 +975,30 @@ const restaurantCSS = `
 @media (max-width: 768px) {
   .bb-hero-title { font-size: 3rem; }
   .bb-nav-links { display: none; }
+  .bb-menu-toggle { display: flex; align-items: center; cursor: pointer; padding: 10px; }
+  .bb-hamburger { display: flex; flex-direction: column; gap: 6px; }
+  .bb-hamburger span { width: 24px; height: 2px; background: #e3a93c; border-radius: 2px; }
+  
+  .bb-mobile-nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 18, 15, 0.98);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+  }
+  .bb-mobile-nav-content { display: flex; flex-direction: column; gap: 2rem; align-items: center; }
+  .bb-mobile-nav-link { font-family: 'Playfair Display', serif; font-size: 2.5rem; color: #fdfbf7; text-transform: uppercase; letter-spacing: 2px; }
+  .bb-mobile-close { margin-top: 4rem; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #e3a93c; padding: 10px 30px; border-radius: 50px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; }
+
   .bb-form-grid { grid-template-columns: 1fr; gap: 1.5rem; }
   .bb-booking-form { padding: 2rem; }
   .bb-hero-text, .bb-hero-title, .bb-subheading, .bb-hero-desc { text-align: center !important; }
   .bb-hero-desc { margin-left: auto !important; margin-right: auto !important; }
   .bb-gallery-grid { grid-template-columns: 1fr; }
   .bb-close-btn { top: 1.5rem; right: 1.5rem; padding: 0.5rem 1rem; }
+  .bb-floating-widget { bottom: 1.5rem; left: 1.5rem; font-size: 0.75rem; padding: 0.8rem 1.2rem; }
 }
 `;

@@ -100,9 +100,16 @@ const MagneticFloat = ({ children, force = 10 }) => {
     x.set((e.clientX - rect.left) / rect.width - 0.5);
     y.set((e.clientY - rect.top) / rect.height - 0.5);
   };
+  const handleTouchMove = (e) => {
+    if (!ref.current || !e.touches[0]) return;
+    const rect = ref.current.getBoundingClientRect();
+    x.set((e.touches[0].clientX - rect.left) / rect.width - 0.5);
+    y.set((e.touches[0].clientY - rect.top) / rect.height - 0.5);
+  };
   const handleMouseLeave = () => { x.set(0); y.set(0); };
   return (
-    <motion.div ref={ref} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
+    <motion.div ref={ref} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onTouchMove={handleTouchMove} onTouchEnd={handleMouseLeave}
+      whileTap={{ scale: 0.98 }}
       style={{ rotateX, rotateY, transformStyle: "preserve-3d" }} className="inline-block relative">
       <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: randomDuration, repeat: Infinity, ease: "easeInOut" }} className="w-full h-full">
          {children}
@@ -216,14 +223,15 @@ export default function App() {
              className="flex items-center gap-1 rounded-full bg-[#111]/80 border border-white/10 backdrop-blur-xl p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.9)] relative overflow-hidden">
              <div className="absolute inset-0 z-[-1] opacity-30 pointer-events-none bg-gradient-to-r from-red-500/20 via-blue-500/20 to-green-500/20 blur-md mix-blend-screen" />
              {["Home", "Work", "Services", "About"].map((item) => (
-               <button key={item} onClick={() => handleNavClick(item)}
-                 className={`relative px-5 py-2.5 rounded-full text-[10px] font-semibold tracking-widest uppercase transition-colors duration-500 z-10 ${activeTab === item ? 'text-black' : 'text-stone-400 hover:text-white'}`}>
+               <motion.button key={item} onClick={() => handleNavClick(item)}
+                 whileTap={{ scale: 0.9 }}
+                 className={`relative px-4 md:px-5 py-2 md:py-2.5 rounded-full text-[9px] md:text-[10px] font-semibold tracking-widest uppercase transition-colors duration-500 z-10 ${activeTab === item ? 'text-black' : 'text-stone-400 hover:text-white'}`}>
                  {activeTab === item && (
                    <motion.div layoutId="active-pill" className="absolute inset-0 bg-white rounded-full -z-10 shadow-[0_0_15px_rgba(255,255,255,0.4)]"
                       transition={{ duration: 0.8, ease: easePowerOut }} />
                  )}
                  {item}
-               </button>
+               </motion.button>
              ))}
            </motion.nav>
         </MagneticFloat>
