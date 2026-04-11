@@ -81,11 +81,30 @@ const VelocityStretch = ({ children }) => {
   const scrollVelocity = useVelocity(scrollY);
   const smoothVelocity = useSpring(scrollVelocity, { damping: 100, stiffness: 600 });
   
-  // Subtle scaling on desktop, disabled or ultra-subtle on mobile for performance
+  // Use transforms only on desktop, disable for mobile performance
   const velocityScaleY = useTransform(smoothVelocity, [-1500, 1500], [0.98, 1.02]);
   const velocityScaleX = useTransform(smoothVelocity, [-1500, 1500], [1.01, 0.99]);
 
-  return <motion.div style={{ scaleY: velocityScaleY, scaleX: velocityScaleX }} className="w-full transform-gpu">{children}</motion.div>;
+  // Dynamic style based on window width
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  return (
+    <motion.div 
+      style={{ 
+        scaleY: isMobile ? 1 : velocityScaleY, 
+        scaleX: isMobile ? 1 : velocityScaleX 
+      }} 
+      className="w-full transform-gpu active:cursor-grabbing"
+    >
+      {children}
+    </motion.div>
+  );
 };
 
 const MagneticFloat = ({ children, force = 10 }) => {
