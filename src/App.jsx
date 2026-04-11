@@ -80,9 +80,12 @@ const VelocityStretch = ({ children }) => {
   const { scrollY } = useScroll();
   const scrollVelocity = useVelocity(scrollY);
   const smoothVelocity = useSpring(scrollVelocity, { damping: 100, stiffness: 600 });
-  const velocityScaleY = useTransform(smoothVelocity, [-1500, 1500], [0.97, 1.03]);
-  const velocityScaleX = useTransform(smoothVelocity, [-1500, 1500], [1.015, 0.985]);
-  return <motion.div style={{ scaleY: velocityScaleY, scaleX: velocityScaleX }} className="w-full">{children}</motion.div>;
+  
+  // Subtle scaling on desktop, disabled or ultra-subtle on mobile for performance
+  const velocityScaleY = useTransform(smoothVelocity, [-1500, 1500], [0.98, 1.02]);
+  const velocityScaleX = useTransform(smoothVelocity, [-1500, 1500], [1.01, 0.99]);
+
+  return <motion.div style={{ scaleY: velocityScaleY, scaleX: velocityScaleX }} className="w-full transform-gpu">{children}</motion.div>;
 };
 
 const MagneticFloat = ({ children, force = 10 }) => {
@@ -122,8 +125,13 @@ const FocalCameraBlur = ({ children, offset = ["start end", "end start"], blurSt
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset });
   const blur = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [blurStrength, 0, 0, blurStrength]);
-  const filter = useTransform(blur, value => value <= 0.1 ? "none" : `blur(${value}px)`);
-  return <motion.div ref={ref} style={{ filter }}>{children}</motion.div>;
+  
+  const filter = useTransform(blur, value => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) return "none";
+    return value <= 0.1 ? "none" : `blur(${value}px)`;
+  });
+  
+  return <motion.div ref={ref} style={{ filter }} className="will-change-[filter]">{children}</motion.div>;
 };
 
 
@@ -147,10 +155,15 @@ export default function App() {
   });
 
   // Background (Home) transforms — eclipsed
-  const bgScale = useTransform(eclipseProgress, [0, 0.5, 1], [1, 0.97, 0.92]);
+  const bgScale = useTransform(eclipseProgress, [0, 0.5, 1], [1, 0.98, 0.95]);
   const bgOpacity = useTransform(eclipseProgress, [0, 0.4, 0.8, 1], [1, 0.85, 0.4, 0.15]);
-  const bgBlurVal = useTransform(eclipseProgress, [0, 0.5, 1], [0, 2, 8]);
-  const bgFilter = useTransform(bgBlurVal, v => v <= 0.1 ? "none" : `blur(${v}px)`);
+  
+  // Disable focal blur calculations on mobile for buttery scroll
+  const bgBlurVal = useTransform(eclipseProgress, [0, 0.5, 1], [0, 1.5, 4]);
+  const bgFilter = useTransform(bgBlurVal, v => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) return "none";
+    return v <= 0.1 ? "none" : `blur(${v}px)`;
+  });
   const bgParallaxY = useTransform(eclipseProgress, [0, 1], ["0%", "-15%"]);
   const scrollIndicatorOpacity = useTransform(eclipseProgress, [0, 0.1], [1, 0]);
 
@@ -198,12 +211,12 @@ export default function App() {
 
       {/* Ambient Blob — Primary */}
       <motion.div aria-hidden
-        className="pointer-events-none fixed left-1/2 top-1/2 z-0 h-[35vmax] w-[35vmax] -translate-x-1/2 -translate-y-1/2 blur-[120px] md:blur-[200px] mix-blend-screen"
+        className="pointer-events-none fixed left-1/2 top-1/2 z-0 h-[35vmax] w-[35vmax] -translate-x-1/2 -translate-y-1/2 blur-[80px] md:blur-[200px] mix-blend-screen will-change-transform"
         animate={accentMap[activeTab]} transition={{ duration: 3, ease: easePowerOut }}
       />
       {/* Ambient Blob — Secondary */}
       <motion.div aria-hidden
-        className="pointer-events-none fixed left-1/2 top-1/2 z-0 h-[20vmax] w-[20vmax] -translate-x-1/2 -translate-y-1/2 blur-[80px] md:blur-[140px] mix-blend-screen"
+        className="pointer-events-none fixed left-1/2 top-1/2 z-0 h-[20vmax] w-[20vmax] -translate-x-1/2 -translate-y-1/2 blur-[60px] md:blur-[140px] mix-blend-screen will-change-transform"
         animate={{
           x: accentMap[activeTab]?.x === "-25vw" ? "15vw" : "-15vw",
           y: accentMap[activeTab]?.y === "-15vh" ? "20vh" : "-10vh",
