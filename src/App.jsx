@@ -1,7 +1,24 @@
 import { motion, useScroll, useTransform, AnimatePresence, useVelocity, useSpring, useMotionValue } from "framer-motion";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { ArrowUpRight, ArrowDown, X, Send, CheckCircle } from "lucide-react";
 import Lenis from "lenis";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+// --- Shared mobile detection hook (avoids duplicate listeners) ---
+const useIsMobile = (breakpoint = 768) => {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < breakpoint);
+  useEffect(() => {
+    let rafId;
+    const check = () => { rafId = requestAnimationFrame(() => setIsMobile(window.innerWidth < breakpoint)); };
+    window.addEventListener("resize", check, { passive: true });
+    return () => { window.removeEventListener("resize", check); cancelAnimationFrame(rafId); };
+  }, [breakpoint]);
+  return isMobile;
+};
 
 // --- Data ---
 const services = [
@@ -55,52 +72,45 @@ const works = [
 const easeHighFashion = [0.22, 1, 0.36, 1];
 const easePowerOut = [0.16, 1, 0.3, 1]; // fast start, buttery settle
 
+// Mobile-friendly variants: lighter 3D transforms + shorter durations for smooth 60fps
+const isMobileDevice = typeof window !== "undefined" && window.innerWidth < 768;
+
 const section3DReveal = {
-  hidden: { opacity: 0, y: 80, rotateX: 8, scale: 0.96 },
-  visible: { opacity: 1, y: 0, rotateX: 0, scale: 1, transition: { ease: easeHighFashion, duration: 1.8 } }
+  hidden: { opacity: 0, y: isMobileDevice ? 40 : 80, scale: isMobileDevice ? 0.98 : 0.96, ...(isMobileDevice ? {} : { rotateX: 8 }) },
+  visible: { opacity: 1, y: 0, rotateX: 0, scale: 1, transition: { ease: easeHighFashion, duration: isMobileDevice ? 1.0 : 1.8 } }
 };
 
 const liquidDropIn = {
-  hidden: { opacity: 0, rotateX: 12, y: 40, scale: 0.95 },
-  visible: { opacity: 1, rotateX: 0, scale: 1, y: 0, transition: { ease: easeHighFashion, duration: 1.5 } }
+  hidden: { opacity: 0, y: isMobileDevice ? 25 : 40, scale: isMobileDevice ? 0.97 : 0.95, ...(isMobileDevice ? {} : { rotateX: 12 }) },
+  visible: { opacity: 1, rotateX: 0, scale: 1, y: 0, transition: { ease: easeHighFashion, duration: isMobileDevice ? 0.8 : 1.5 } }
 };
 
 const staggerText = {
-  hidden: { opacity: 0, y: 25, rotateX: 6 },
-  visible: { opacity: 1, y: 0, rotateX: 0, transition: { ease: easeHighFashion, duration: 1.2 } }
+  hidden: { opacity: 0, y: isMobileDevice ? 16 : 25, ...(isMobileDevice ? {} : { rotateX: 6 }) },
+  visible: { opacity: 1, y: 0, rotateX: 0, transition: { ease: easeHighFashion, duration: isMobileDevice ? 0.7 : 1.2 } }
 };
 
 const card3DReveal = {
-  hidden: { opacity: 0, y: 60, rotateX: 10, rotateY: -3, scale: 0.9 },
-  visible: { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, transition: { ease: easeHighFashion, duration: 1.6 } }
+  hidden: { opacity: 0, y: isMobileDevice ? 30 : 60, scale: isMobileDevice ? 0.95 : 0.9, ...(isMobileDevice ? {} : { rotateX: 10, rotateY: -3 }) },
+  visible: { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, transition: { ease: easeHighFashion, duration: isMobileDevice ? 0.8 : 1.6 } }
 };
 
-// --- PHYSICS ENGINES ---
+// --- PHYSICS ENGINES (mobile-optimized) ---
 
 const VelocityStretch = ({ children }) => {
+  const isMobile = useIsMobile();
   const { scrollY } = useScroll();
   const scrollVelocity = useVelocity(scrollY);
   const smoothVelocity = useSpring(scrollVelocity, { damping: 100, stiffness: 600 });
-  
-  // Use transforms only on desktop, disable for mobile performance
   const velocityScaleY = useTransform(smoothVelocity, [-1500, 1500], [0.98, 1.02]);
   const velocityScaleX = useTransform(smoothVelocity, [-1500, 1500], [1.01, 0.99]);
 
-  // Dynamic style based on window width
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  // On mobile: pure passthrough div — zero spring overhead rendered
+  if (isMobile) return <div className="w-full">{children}</div>;
 
   return (
-    <motion.div 
-      style={{ 
-        scaleY: isMobile ? 1 : velocityScaleY, 
-        scaleX: isMobile ? 1 : velocityScaleX 
-      }} 
+    <motion.div
+      style={{ scaleY: velocityScaleY, scaleX: velocityScaleX }}
       className="w-full transform-gpu active:cursor-grabbing"
     >
       {children}
@@ -109,6 +119,7 @@ const VelocityStretch = ({ children }) => {
 };
 
 const MagneticFloat = ({ children, force = 10 }) => {
+  const isMobile = useIsMobile();
   const ref = useRef(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -117,21 +128,30 @@ const MagneticFloat = ({ children, force = 10 }) => {
   const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [force, -force]);
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-force, force]);
   const randomDuration = useRef(4 + Math.random() * 2).current;
+
+  // On mobile: gentle CSS-based float (GPU-friendly translate only, no spring physics)
+  if (isMobile) {
+    return (
+      <motion.div
+        className="inline-block relative w-full h-full"
+        animate={{ y: [0, -3, 0] }}
+        transition={{ duration: randomDuration + 1, repeat: Infinity, ease: "easeInOut" }}
+        whileTap={{ scale: 0.97 }}
+      >
+        {children}
+      </motion.div>
+    );
+  }
+
   const handleMouseMove = (e) => {
     if (!ref.current) return;
     const rect = ref.current.getBoundingClientRect();
     x.set((e.clientX - rect.left) / rect.width - 0.5);
     y.set((e.clientY - rect.top) / rect.height - 0.5);
   };
-  const handleTouchMove = (e) => {
-    if (!ref.current || !e.touches[0]) return;
-    const rect = ref.current.getBoundingClientRect();
-    x.set((e.touches[0].clientX - rect.left) / rect.width - 0.5);
-    y.set((e.touches[0].clientY - rect.top) / rect.height - 0.5);
-  };
   const handleMouseLeave = () => { x.set(0); y.set(0); };
   return (
-    <motion.div ref={ref} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onTouchMove={handleTouchMove} onTouchEnd={handleMouseLeave}
+    <motion.div ref={ref} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
       whileTap={{ scale: 0.98 }}
       style={{ rotateX, rotateY, transformStyle: "preserve-3d" }} className="inline-block relative">
       <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: randomDuration, repeat: Infinity, ease: "easeInOut" }} className="w-full h-full">
@@ -142,21 +162,23 @@ const MagneticFloat = ({ children, force = 10 }) => {
 };
 
 const FocalCameraBlur = ({ children, offset = ["start end", "end start"], blurStrength = 4 }) => {
+  const isMobile = useIsMobile();
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset });
   const blur = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [blurStrength, 0, 0, blurStrength]);
-  
-  const filter = useTransform(blur, value => {
-    if (typeof window !== "undefined" && window.innerWidth < 768) return "none";
-    return value <= 0.1 ? "none" : `blur(${value}px)`;
-  });
-  
+  const filter = useTransform(blur, value => value <= 0.1 ? "none" : `blur(${value}px)`);
+  // Mobile: use scroll-driven opacity fade instead of blur (opacity is GPU-composited)
+  const mobileOpacity = useTransform(scrollYProgress, [0, 0.15, 0.85, 1], [0.4, 1, 1, 0.4]);
+
+  if (isMobile) return <motion.div ref={ref} style={{ opacity: mobileOpacity }}>{children}</motion.div>;
+
   return <motion.div ref={ref} style={{ filter }} className="will-change-[filter]">{children}</motion.div>;
 };
 
 
 
 export default function App() {
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState("Home");
   const [selectedWork, setSelectedWork] = useState(null);
   const [showContact, setShowContact] = useState(false);
@@ -178,36 +200,100 @@ export default function App() {
   const bgScale = useTransform(eclipseProgress, [0, 0.5, 1], [1, 0.98, 0.95]);
   const bgOpacity = useTransform(eclipseProgress, [0, 0.4, 0.8, 1], [1, 0.85, 0.4, 0.15]);
   
-  // Disable focal blur calculations on mobile for buttery scroll
+  // Disable focal blur on mobile for buttery scroll
   const bgBlurVal = useTransform(eclipseProgress, [0, 0.5, 1], [0, 1.5, 4]);
   const bgFilter = useTransform(bgBlurVal, v => {
-    if (typeof window !== "undefined" && window.innerWidth < 768) return "none";
+    if (isMobile) return "none";
     return v <= 0.1 ? "none" : `blur(${v}px)`;
   });
-  const bgParallaxY = useTransform(eclipseProgress, [0, 1], ["0%", "-15%"]);
+  const bgParallaxY = useTransform(eclipseProgress, [0, 1], isMobile ? ["0%", "-5%"] : ["0%", "-15%"]);
   const scrollIndicatorOpacity = useTransform(eclipseProgress, [0, 0.1], [1, 0]);
 
-  // Cover (Work) transforms — the singularity morph
-  const coverBorderRadius = useTransform(eclipseProgress, [0.2, 0.6, 0.9, 1], [60, 36, 12, 0]);
+  // Cover (Work) transforms — lighter on mobile (simpler shadow, subtle scale)
+  const coverBorderRadius = useTransform(eclipseProgress, [0.2, 0.6, 0.9, 1], isMobile ? [28, 14, 4, 0] : [60, 36, 12, 0]);
   const coverBorderRadiusStr = useTransform(coverBorderRadius, v => `${v}px ${v}px 0 0`);
-  const coverScale = useTransform(eclipseProgress, [0.2, 0.7, 1], [0.92, 0.97, 1]);
+  const coverScale = useTransform(eclipseProgress, [0.2, 0.7, 1], isMobile ? [0.97, 0.99, 1] : [0.92, 0.97, 1]);
   const coverShadowIntensity = useTransform(eclipseProgress, [0.2, 0.7, 1], [0, 0.5, 1]);
-  const coverShadow = useTransform(coverShadowIntensity, v => 
-    `0 -${Math.round(15 + v * 45)}px ${Math.round(30 + v * 90)}px rgba(0,0,0,${(0.15 + v * 0.55).toFixed(2)})`
+  const coverShadowDesktop = useTransform(coverShadowIntensity,
+    v => `0 -${Math.round(15 + v * 45)}px ${Math.round(30 + v * 90)}px rgba(0,0,0,${(0.15 + v * 0.55).toFixed(2)})`
   );
-  const coverMarginX = useTransform(eclipseProgress, [0.2, 0.9, 1], [20, 4, 0]);
+  // Mobile: simpler static shadow (no per-frame computation)
+  const coverShadowMobile = useTransform(coverShadowIntensity,
+    v => `0 -8px 24px rgba(0,0,0,${(0.2 + v * 0.4).toFixed(2)})`
+  );
+  const coverMarginX = useTransform(eclipseProgress, [0.2, 0.9, 1], isMobile ? [8, 2, 0] : [20, 4, 0]);
 
   useEffect(() => {
-    const lenis = new Lenis({ lerp: 0.07, smoothWheel: true, wheelMultiplier: 0.8 });
-    window.lenis = lenis;
-    function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
-    requestAnimationFrame(raf);
-    return () => { lenis.destroy(); delete window.lenis; };
-  }, []);
+    if (isMobile) {
+      // Mobile: GSAP ScrollTrigger snap scrolling
+      let rafId;
+      const lenis = new Lenis({ lerp: 1, smoothWheel: false, smoothTouch: false });
+      window.lenis = lenis;
+      function raf(time) { lenis.raf(time); rafId = requestAnimationFrame(raf); }
+      rafId = requestAnimationFrame(raf);
+
+      // Delay snap setup so DOM is fully rendered and measured
+      const timer = setTimeout(() => {
+        ScrollTrigger.refresh(true);
+
+        const sectionIds = ["#home", "#work", "#services", "#about"];
+        const sections = sectionIds.map(id => document.querySelector(id)).filter(Boolean);
+
+        if (sections.length > 0) {
+          // Calculate snap positions using getBoundingClientRect (works with nested elements)
+          const getSnapPositions = () => {
+            const maxScroll = ScrollTrigger.maxScroll(window);
+            if (maxScroll <= 0) return [0];
+            return sections.map(el => {
+              const rect = el.getBoundingClientRect();
+              const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+              return Math.max(0, Math.min(1, (rect.top + scrollTop) / maxScroll));
+            });
+          };
+
+          ScrollTrigger.create({
+            snap: {
+              snapTo(progress) {
+                const positions = getSnapPositions();
+                // Find the nearest snap point
+                return positions.reduce((prev, curr) =>
+                  Math.abs(curr - progress) < Math.abs(prev - progress) ? curr : prev
+                );
+              },
+              duration: { min: 0.25, max: 0.6 },
+              delay: 0.15,
+              ease: "power1.inOut",
+            },
+          });
+        }
+      }, 500);
+
+      return () => {
+        clearTimeout(timer);
+        cancelAnimationFrame(rafId);
+        ScrollTrigger.getAll().forEach(t => t.kill());
+        lenis.destroy();
+        delete window.lenis;
+      };
+    } else {
+      // Desktop: Lenis smooth inertial scrolling
+      const lenis = new Lenis({ lerp: 0.07, smoothWheel: true, wheelMultiplier: 0.8 });
+      window.lenis = lenis;
+      function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+      requestAnimationFrame(raf);
+      return () => { lenis.destroy(); delete window.lenis; };
+    }
+  }, [isMobile]);
 
   const handleNavClick = (id) => {
     setActiveTab(id);
-    if (window.lenis) {
+    if (isMobile) {
+      gsap.to(window, {
+        scrollTo: { y: `#${id.toLowerCase()}`, offsetY: 0 },
+        duration: 0.8,
+        ease: "power2.inOut",
+      });
+    } else if (window.lenis) {
       window.lenis.scrollTo(`#${id.toLowerCase()}`, { offset: 0, duration: 1.5, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
     }
   };
@@ -229,31 +315,33 @@ export default function App() {
         </filter>
       </svg>
 
-      {/* Ambient Blob — Primary */}
+      {/* Ambient Blob — Primary (smaller + less blur on mobile) */}
       <motion.div aria-hidden
-        className="pointer-events-none fixed left-1/2 top-1/2 z-0 h-[35vmax] w-[35vmax] -translate-x-1/2 -translate-y-1/2 blur-[80px] md:blur-[200px] mix-blend-screen will-change-transform"
-        animate={accentMap[activeTab]} transition={{ duration: 3, ease: easePowerOut }}
+        className={`pointer-events-none fixed left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 mix-blend-screen ${isMobile ? 'h-[25vmax] w-[25vmax] blur-[40px]' : 'h-[35vmax] w-[35vmax] blur-[200px] will-change-transform'}`}
+        animate={isMobile ? { ...accentMap[activeTab], opacity: (accentMap[activeTab]?.opacity || 0.5) * 0.5 } : accentMap[activeTab]}
+        transition={{ duration: isMobile ? 1.5 : 3, ease: easePowerOut }}
       />
-      {/* Ambient Blob — Secondary */}
+      {/* Ambient Blob — Secondary (smaller on mobile) */}
       <motion.div aria-hidden
-        className="pointer-events-none fixed left-1/2 top-1/2 z-0 h-[20vmax] w-[20vmax] -translate-x-1/2 -translate-y-1/2 blur-[60px] md:blur-[140px] mix-blend-screen will-change-transform"
+        className={`pointer-events-none fixed left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 mix-blend-screen ${isMobile ? 'h-[15vmax] w-[15vmax] blur-[30px]' : 'h-[20vmax] w-[20vmax] blur-[140px] will-change-transform'}`}
         animate={{
           x: accentMap[activeTab]?.x === "-25vw" ? "15vw" : "-15vw",
           y: accentMap[activeTab]?.y === "-15vh" ? "20vh" : "-10vh",
-          opacity: (accentMap[activeTab]?.opacity || 0.3) * 0.4,
+          opacity: isMobile ? (accentMap[activeTab]?.opacity || 0.3) * 0.2 : (accentMap[activeTab]?.opacity || 0.3) * 0.4,
           backgroundColor: activeTab === "Home" ? "#7c2d12" : activeTab === "Services" ? "#1e1b4b" : "#1c1917",
-          scale: 0.8
+          scale: isMobile ? 0.6 : 0.8
         }}
-        transition={{ duration: 4, ease: easePowerOut }}
+        transition={{ duration: isMobile ? 2 : 4, ease: easePowerOut }}
       />
       
-      <div className="pointer-events-none fixed inset-0 z-50 mix-blend-overlay opacity-[0.2] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      {/* Noise overlay — reduced opacity on mobile */}
+      <div className={`pointer-events-none fixed inset-0 z-50 mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')] ${isMobile ? 'opacity-[0.08]' : 'opacity-[0.2]'}`} />
       
       {/* Persistent Nav */}
-      <div className="fixed bottom-10 w-full flex justify-center z-50 pointer-events-auto" style={{ perspective: "1000px" }}>
+      <div className="fixed bottom-10 left-0 right-0 flex items-center justify-center z-50 pointer-events-auto" style={{ perspective: "1000px" }}>
         <MagneticFloat force={12}>
            <motion.nav initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 1.2, ease: easePowerOut }}
-             className="flex items-center gap-1 rounded-full bg-[#111]/80 border border-white/10 backdrop-blur-xl p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.9)] relative overflow-hidden">
+             className={`flex items-center justify-center gap-1 rounded-full bg-[#111]/80 border border-white/10 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.9)] relative overflow-hidden ${isMobile ? 'backdrop-blur-md' : 'backdrop-blur-xl'}`}>
              <div className="absolute inset-0 z-[-1] opacity-30 pointer-events-none bg-gradient-to-r from-red-500/20 via-blue-500/20 to-green-500/20 blur-md mix-blend-screen" />
              {["Home", "Work", "Services", "About"].map((item) => (
                <motion.button key={item} onClick={() => handleNavClick(item)}
@@ -330,7 +418,7 @@ export default function App() {
             style={{
               borderRadius: coverBorderRadiusStr,
               scale: coverScale,
-              boxShadow: coverShadow,
+              boxShadow: isMobile ? coverShadowMobile : coverShadowDesktop,
               marginLeft: coverMarginX,
               marginRight: coverMarginX,
               marginTop: "-50vh",
