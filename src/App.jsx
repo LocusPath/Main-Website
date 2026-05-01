@@ -33,23 +33,24 @@ const works = [
     text: "Complete brand identity, website, and reservation system for a premium Indo-Italian fine-dining restaurant. Wood-fired artisan cuisine meets vibrant Indian spices.",
     img: "/restaurant/hero_dish.png",
     artDir: "LocusPath", visual: "In-house", year: "2025",
-    isLive: true, liveUrl: "https://restaurent-sample-1.vercel.app/"
+    isLive: true, liveUrl: "https://basilico-blu-1.vercel.app/"
   },
   {
     id: "w2", category: "Cafe", title: "Brew & Soul",
     text: "Full brand identity and immersive website for an artisan coffee experience. Bean-to-cup philosophy with curated single-origin selections.",
     img: "/works/cafe.png",
     artDir: "LocusPath", visual: "In-house", year: "2025",
-    isLive: true, liveUrl: "https://cafe-portal-beta.vercel.app/"
+    isLive: true, liveUrl: "https://brew-soul.vercel.app/"
   },
   {
     id: "w3", category: "Boutique", title: "Maison Élégance",
     text: "Luxury fashion boutique e-commerce platform with curated collections, editorial lookbooks, and an elite shopping experience.",
     img: "/works/boutique.png",
     artDir: "LocusPath", visual: "In-house", year: "2026",
-    isLive: true, liveUrl: "https://boutique-indol.vercel.app/"
+    isLive: true, liveUrl: "https://mason-elegance-1.vercel.app/"
   }
 ];
+
 
 const easeHighFashion = [0.22, 1, 0.36, 1];
 const easePowerOut = [0.16, 1, 0.3, 1]; // fast start, buttery settle
